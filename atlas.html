@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Showdown — Curiosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#2a2114;--ink-soft:#5b4a32;--oxblood:#9c3d28;--verdigris:#356b5e;--gold:#a8812f;--line:#bca677;--shadow:rgba(42,33,20,.22)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'EB Garamond',serif;color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;position:relative;overflow-x:hidden;
+    background:radial-gradient(circle at 18% 12%,rgba(168,129,47,.10),transparent 42%),radial-gradient(circle at 84% 88%,rgba(53,107,94,.10),transparent 46%),radial-gradient(ellipse at center,#ece0c8 0%,#ddc9a3 100%)}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");mix-blend-mode:multiply}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;box-shadow:inset 0 0 220px rgba(60,42,20,.34)}
+  .stage{position:relative;z-index:1;width:100%;max-width:600px;background:linear-gradient(180deg,#f3e9d2,#e8d8b6);border:1px solid var(--line);border-radius:4px;box-shadow:0 22px 60px -18px var(--shadow);padding:40px 40px 34px}
+  .stage::before{content:"";position:absolute;inset:12px;border:1px solid rgba(168,129,47,.45);border-radius:2px;pointer-events:none}
+  .corner{position:absolute;width:24px;height:24px;border:2px solid var(--gold);opacity:.7;z-index:2}
+  .corner.tl{top:18px;left:18px;border-right:0;border-bottom:0}.corner.tr{top:18px;right:18px;border-left:0;border-bottom:0}
+  .corner.bl{bottom:18px;left:18px;border-right:0;border-top:0}.corner.br{bottom:18px;right:18px;border-left:0;border-top:0}
+  .view{position:relative;z-index:3;animation:rise .5s ease both}@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .eyebrow{text-align:center;font-family:'Cinzel',serif;letter-spacing:.4em;font-size:.64rem;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
+  h1{font-family:'Cinzel',serif;font-weight:700;text-align:center;font-size:clamp(1.9rem,6vw,2.7rem);letter-spacing:.04em;line-height:1.05}
+  .rule{display:flex;align-items:center;gap:12px;justify-content:center;margin:16px auto 8px;max-width:320px}
+  .rule .ln{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);flex:1}.rule .dot{color:var(--oxblood)}
+  .tagline{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.04rem;max-width:420px;margin:0 auto 26px;line-height:1.5}
+  .btn{cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.14em;text-transform:uppercase;font-size:.74rem;color:#f3e9d2;background:var(--ink);border:1px solid var(--ink);padding:12px 24px;border-radius:3px;transition:background .16s,transform .12s}
+  .btn:hover{background:var(--oxblood);border-color:var(--oxblood);transform:translateY(-2px)}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}.btn.ghost:hover{background:rgba(42,33,20,.06);color:var(--ink)}
+  .center{text-align:center}
+  .back{display:block;text-align:center;margin-top:22px;font-family:'Cinzel',serif;font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);text-decoration:none}
+  .back:hover{color:var(--oxblood)}
+  /* play */
+  .phead{display:flex;justify-content:space-between;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.14em}
+  .phead b{color:var(--oxblood)}.phead .b b{color:var(--verdigris)}
+  .duel{margin:22px 0 10px}
+  .nation{background:rgba(255,250,238,.55);border:1px solid var(--line);border-radius:3px;padding:18px 20px;text-align:center;margin-bottom:10px}
+  .nation .nm{font-family:'Cinzel',serif;font-size:1.5rem;letter-spacing:.03em}
+  .nation .lab{font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
+  .nation .val{font-family:'Cinzel',serif;font-size:1.5rem;color:var(--verdigris);margin-top:6px;min-height:1.4em}
+  .vs{text-align:center;font-family:'Cinzel',serif;color:var(--oxblood);letter-spacing:.3em;font-size:.7rem;margin:2px 0}
+  .ask{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.06rem;margin:14px 0 16px}
+  .ask b{font-style:normal;color:var(--ink)}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .choices button{font-family:'Cinzel',serif;letter-spacing:.1em;text-transform:uppercase;font-size:.84rem;padding:16px;border:1px solid var(--line);border-radius:3px;cursor:pointer;background:rgba(255,250,238,.6);color:var(--ink);transition:transform .12s,background .14s,border-color .14s}
+  .choices button:hover{transform:translateY(-2px);background:rgba(255,250,238,.95);border-color:var(--gold)}
+  .choices button.larger{color:var(--verdigris)}.choices button.smaller{color:var(--oxblood)}
+  /* results */
+  .res-title{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft);text-align:center;margin-bottom:8px}
+  .rank{font-family:'Cinzel',serif;font-weight:700;text-align:center;font-size:clamp(1.6rem,5vw,2.2rem);color:var(--oxblood);letter-spacing:.04em}
+  .scorebig{text-align:center;margin:16px 0 4px;font-size:3rem;font-family:'Cinzel',serif}.scorebig small{font-size:1.1rem;color:var(--ink-soft)}
+  .res-sub{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.02rem;max-width:400px;margin:6px auto 22px;line-height:1.5}
+  .res-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  @media(max-width:560px){.stage{padding:32px 22px 28px}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <div id="app"></div>
+</div>
+<script>
+const app=document.getElementById('app');
+// Country areas in km² (total area, approximate, stable figures)
+const C=[
+ ["Russia",17098242],["Canada",9984670],["United States",9833517],["China",9596961],
+ ["Brazil",8515767],["Australia",7692024],["India",3287263],["Argentina",2780400],
+ ["Kazakhstan",2724900],["Algeria",2381741],["DR Congo",2344858],["Saudi Arabia",2149690],
+ ["Mexico",1964375],["Indonesia",1904569],["Sudan",1861484],["Libya",1759540],
+ ["Iran",1648195],["Mongolia",1564110],["Peru",1285216],["Chad",1284000],
+ ["South Africa",1221037],["Colombia",1141748],["Egypt",1002450],["France",551695],
+ ["Spain",505990],["Sweden",450295],["Japan",377975],["Germany",357114],
+ ["Italy",301340],["United Kingdom",243610],["Iceland",103000],["Portugal",92212],
+ ["Belgium",30528],["Jamaica",10991],["Singapore",728]
+];
+let st=null;
+const fmt=n=>n.toLocaleString('en-US');
+function pickDiff(cur){let n;do{n=C[Math.floor(Math.random()*C.length)];}while(n[0]===cur[0]);return n;}
+
+function home(){
+  st=null;
+  app.innerHTML=`<div class="view">
+    <div class="eyebrow">A Duel of Nations</div>
+    <h1>Atlas Showdown</h1>
+    <div class="rule"><span class="ln"></span><span class="dot">✦</span><span class="ln"></span></div>
+    <p class="tagline">One country's land area is shown. Decide whether the challenger is <b>larger</b> or <b>smaller</b>. Guess right and the chain continues — one wrong call ends the run.</p>
+    <div class="center"><button class="btn" id="go">Begin the Duel</button></div>
+    <a class="back" href="../index.html">← Return to Curiosa</a>
+  </div>`;
+  app.querySelector('#go').onclick=start;
+}
+function start(){
+  const a=C[Math.floor(Math.random()*C.length)];
+  st={score:0,cur:a,chal:pickDiff(a),locked:false};
+  play();
+}
+function play(){
+  st.locked=false;
+  app.innerHTML=`<div class="view">
+    <div class="phead"><span>Chain <b>${st.score}</b></span><span class="b">Best <b>${best()}</b></span></div>
+    <div class="duel">
+      <div class="nation"><div class="lab">Known</div><div class="nm">${st.cur[0]}</div><div class="val">${fmt(st.cur[1])} km²</div></div>
+      <div class="vs">— versus —</div>
+      <div class="nation"><div class="lab">Challenger</div><div class="nm">${st.chal[0]}</div><div class="val" id="reveal">? ? ?</div></div>
+    </div>
+    <div class="ask">Is <b>${st.chal[0]}</b> larger or smaller in area?</div>
+    <div class="choices">
+      <button class="larger" id="lg">▲ Larger</button>
+      <button class="smaller" id="sm">▼ Smaller</button>
+    </div>
+    <a class="back" href="../index.html">← Return to Curiosa</a>
+  </div>`;
+  app.querySelector('#lg').onclick=()=>guess('larger');
+  app.querySelector('#sm').onclick=()=>guess('smaller');
+}
+function guess(g){
+  if(st.locked)return;st.locked=true;
+  const correct=(g==='larger'&&st.chal[1]>st.cur[1])||(g==='smaller'&&st.chal[1]<st.cur[1]);
+  app.querySelector('#reveal').textContent=fmt(st.chal[1])+' km²';
+  const choices=app.querySelector('.choices');
+  if(correct){
+    st.score++;updateBest(st.score);
+    choices.innerHTML=`<button class="btn" id="next" style="grid-column:1/3">Correct ✦ Continue →</button>`;
+    app.querySelector('#next').onclick=()=>{st.cur=st.chal;st.chal=pickDiff(st.cur);play();};
+    const ph=app.querySelector('.phead');ph.innerHTML=`<span>Chain <b>${st.score}</b></span><span class="b">Best <b>${best()}</b></span>`;
+  }else{
+    choices.innerHTML=`<div style="grid-column:1/3;text-align:center;color:var(--oxblood);font-family:'Cinzel',serif;letter-spacing:.1em;padding:6px 0">Not this time.</div>`;
+    setTimeout(results,900);
+  }
+}
+let _best=0;
+function best(){return _best;}
+function updateBest(s){_best=Math.max(_best,s);}
+function rank(s){
+  if(s>=15)return{t:'Grand Cartographer',d:'An extraordinary feel for the size of the world.'};
+  if(s>=10)return{t:'Master Geographer',d:'You carry the atlas in your head.'};
+  if(s>=6)return{t:'Seasoned Navigator',d:'A confident sense of scale across continents.'};
+  if(s>=3)return{t:'Apprentice Explorer',d:'The map is taking shape in your mind.'};
+  return{t:'Fresh Recruit',d:'Every great explorer misjudges a border now and then.'};
+}
+function results(){
+  const r=rank(st.score);
+  app.innerHTML=`<div class="view">
+    <div class="res-title">The Chain Is Broken</div>
+    <div class="rank">${r.t}</div>
+    <div class="scorebig">${st.score}<small> in a row</small></div>
+    <p class="res-sub">${r.d} Best run this session: ${best()}.</p>
+    <div class="res-actions">
+      <button class="btn" id="again">Duel Again</button>
+      <button class="btn ghost" id="menu">Main Gate</button>
+    </div>
+    <a class="back" href="../index.html">← Return to Curiosa</a>
+  </div>`;
+  app.querySelector('#again').onclick=start;
+  app.querySelector('#menu').onclick=home;
+}
+home();
+</script>
+</body>
+</html>
