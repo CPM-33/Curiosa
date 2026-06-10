@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Vocabulary Vault — Curiosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/shared.css">
+<style>
+  .qhead{display:flex;justify-content:space-between;align-items:center}
+  .qmeta{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+  .scoreline{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.1em}.scoreline b{color:var(--oxblood)}
+  .bar{height:6px;background:rgba(120,96,52,.18);border-radius:6px;overflow:hidden;margin:14px 0 22px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--oxblood));border-radius:6px;transition:width .45s}
+  .word{text-align:center;font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,2.8rem);letter-spacing:.04em;color:var(--ink);margin:4px 0 4px}
+  .pron{text-align:center;font-style:italic;color:var(--ink-soft);margin-bottom:22px}
+  .opts{display:grid;gap:10px}
+  .opt{cursor:pointer;text-align:start;font-size:1.04rem;line-height:1.4;background:rgba(255,250,238,.55);border:1px solid var(--line);border-radius:3px;padding:13px 15px;color:var(--ink);transition:transform .12s,background .14s,border-color .14s}
+  .opt:not(.locked):hover{background:rgba(255,250,238,.95);transform:translateX(3px);border-color:var(--gold)}
+  .opt.correct{background:rgba(53,107,94,.16);border-color:var(--verdigris)}
+  .opt.wrong{background:rgba(156,61,40,.13);border-color:var(--oxblood)}
+  .opt.dim{opacity:.5}.opt.locked{cursor:default}
+  .feedback{margin-top:20px;border-top:1px dashed var(--line);padding-top:16px;opacity:0;max-height:0;overflow:hidden;transition:opacity .35s}
+  .feedback.show{opacity:1;max-height:420px}
+  .verdict{font-family:'Cinzel',serif;letter-spacing:.14em;text-transform:uppercase;font-size:.78rem;margin-bottom:6px}
+  .verdict.good{color:var(--verdigris)}.verdict.bad{color:var(--oxblood)}
+  .explain{font-size:1.02rem;line-height:1.55;font-style:italic}
+  .explain b{font-style:normal;color:var(--oxblood)}
+  .nextrow{display:flex;justify-content:flex-end;margin-top:16px}
+  .res-title{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft);text-align:center;margin-bottom:8px}
+  .rank{font-family:'Cinzel',serif;font-weight:700;text-align:center;font-size:clamp(1.7rem,5vw,2.4rem);color:var(--oxblood)}
+  .scorebig{text-align:center;margin:18px 0 4px;font-size:3.1rem;font-family:'Cinzel',serif}.scorebig small{font-size:1.2rem;color:var(--ink-soft)}
+  .res-sub{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.04rem;max-width:420px;margin:6px auto 22px;line-height:1.5}
+  .res-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .newbest{text-align:center;color:var(--verdigris);font-family:'Cinzel',serif;letter-spacing:.1em;font-size:.78rem;margin-bottom:8px}
+  .langnote{text-align:center;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);opacity:.7;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="gamewrap"><div class="stage">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <div id="app"></div>
+</div></div>
+<script src="../assets/strings.js"></script>
+<script>window.CURIOSA_ROOT="../";</script>
+<script src="../assets/core.js"></script>
+<script>
+// This hall is English-only by design (it teaches English words and their roots).
+var WORDS=[
+ {w:"Defenestration",p:"de-fen-uh-STRAY-shun",d:["The act of throwing someone or something out of a window","A fear of open windows","The careful cleaning of glass","A formal dismissal from office"],e:"From Latin <b>fenestra</b>, 'window'. Famous after the 1618 Defenestration of Prague helped spark the Thirty Years' War."},
+ {w:"Petrichor",p:"PET-ri-kor",d:["The earthy scent of rain on dry soil","A type of fossilised resin","A mineral found in caves","The first frost of autumn"],e:"Coined in 1964 from Greek <b>petra</b> (stone) + <b>ichor</b>, the fluid said to flow in the gods' veins."},
+ {w:"Sesquipedalian",p:"ses-kwi-puh-DAY-lee-un",d:["Given to using long words","Walking with a limp","Relating to the number six","Easily distracted"],e:"From Latin <b>sesquipedalis</b>, 'a foot and a half long' — literally words a foot and a half long."},
+ {w:"Perspicacious",p:"pur-spi-KAY-shus",d:["Having keen insight and understanding","Sweating heavily","Overly suspicious","Persistent to a fault"],e:"From Latin <b>perspicax</b>, 'sharp-sighted'. A perspicacious mind sees clearly into things."},
+ {w:"Ineffable",p:"in-EF-uh-bul",d:["Too great to be expressed in words","Unable to be undone","Impossible to ignore","Without flavour"],e:"From Latin <b>in-</b> (not) + <b>effabilis</b> (utterable). Often used of overwhelming beauty or feeling."},
+ {w:"Susurrus",p:"soo-SUR-us",d:["A soft murmuring or whispering sound","A sudden loud noise","A circular motion of water","A nervous tremor"],e:"A Latin word, itself an imitation of the soft sound it names — like wind through leaves."},
+ {w:"Quotidian",p:"kwoh-TID-ee-un",d:["Occurring every day; ordinary","Happening once in a lifetime","Relating to quotations","Measured in quarts"],e:"From Latin <b>quotidianus</b>, 'daily'. It can mean both 'everyday' and 'mundane'."},
+ {w:"Mellifluous",p:"muh-LIF-loo-us",d:["Sweet and smooth, like honey (of sound)","Bitter to the taste","Slow and laborious","Brightly coloured"],e:"From Latin <b>mel</b> (honey) + <b>fluere</b> (to flow). Most often praises a voice or music."},
+ {w:"Lugubrious",p:"luh-GOO-bree-us",d:["Looking or sounding sad and dismal","Brightly cheerful","Heavy and slow-moving","Excessively talkative"],e:"From Latin <b>lugere</b>, 'to mourn'. Often suggests sadness that is almost exaggerated."},
+ {w:"Verisimilitude",p:"ver-i-si-MIL-i-tood",d:["The appearance of being true or real","A small but important difference","Truth told reluctantly","A mirror image"],e:"From Latin <b>verus</b> (true) + <b>similis</b> (like). Prized in fiction and art."},
+ {w:"Ebullient",p:"ih-BUL-yunt",d:["Cheerful and full of energy","Easily broken","Slow to anger","Faintly glowing"],e:"From Latin <b>ebullire</b>, 'to bubble up'. An ebullient person seems to bubble with enthusiasm."},
+ {w:"Recalcitrant",p:"ri-KAL-si-trunt",d:["Stubbornly resistant to authority","Quick to apologise","Easily persuaded","Prone to forgetfulness"],e:"From Latin <b>recalcitrare</b>, 'to kick back' — as a stubborn horse kicks against the spur."},
+ {w:"Sycophant",p:"SIK-uh-fant",d:["A person who flatters to gain advantage","A lover of figs","A skilled musician","A type of court official"],e:"From Greek <b>sykophantes</b>. Today it names a self-serving flatterer or 'yes-man'."},
+ {w:"Magnanimous",p:"mag-NAN-i-mus",d:["Generous and forgiving, especially to a rival","Extremely wealthy","Quick-tempered","Physically imposing"],e:"From Latin <b>magnus</b> (great) + <b>animus</b> (spirit) — literally 'great-souled'."},
+ {w:"Esoteric",p:"es-uh-TER-ik",d:["Understood by only a small, specialised group","Common and widely known","Relating to the outdoors","Easily measured"],e:"From Greek <b>esoterikos</b>, 'inner'. Once described teachings reserved for initiates."},
+ {w:"Obfuscate",p:"OB-fus-kayt",d:["To deliberately make unclear or confusing","To polish until shining","To repeat needlessly","To set firmly in place"],e:"From Latin <b>obfuscare</b>, 'to darken'. To obfuscate is to throw shade over the truth."},
+ {w:"Sanguine",p:"SANG-gwin",d:["Optimistic, especially in a difficult situation","Pale and sickly","Coldly logical","Deeply secretive"],e:"From Latin <b>sanguis</b> (blood). Medieval medicine linked a blood-rich temperament to cheer."},
+ {w:"Pellucid",p:"puh-LOO-sid",d:["Transparently clear, easily understood","Faintly glowing in the dark","Densely overgrown","Bitterly cold"],e:"From Latin <b>pellucidus</b>, 'shining through'. Used of water, glass, or clear prose."},
+ {w:"Equanimity",p:"ee-kwuh-NIM-i-tee",d:["Calmness and composure under strain","A fair division of property","Equality before the law","A balanced diet"],e:"From Latin <b>aequus</b> (even) + <b>animus</b> (mind) — an even mind in trying times."},
+ {w:"Ephemeral",p:"ih-FEM-er-ul",d:["Lasting for a very short time","Repeating in cycles","Hidden from view","Heavier than it appears"],e:"From Greek <b>ephemeros</b>, 'lasting a day'. Mayflies belong to the order Ephemeroptera."}
+];
+var RANKS=[
+ {min:.9,t:"Lexicon Laureate",d:"A vocabulary of rare brilliance."},
+ {min:.7,t:"Master of Words",d:"A formidable command of the language."},
+ {min:.5,t:"Seasoned Reader",d:"A rich vocabulary, still growing."},
+ {min:.3,t:"Curious Apprentice",d:"New words are taking root."},
+ {min:0,t:"Fresh Recruit",d:"Every great reader starts here."}
+];
+var PER=10,app=document.getElementById('app'),st=null;
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x;}return a;}
+function home(){st=null;
+  app.innerHTML='<div class="view"><div class="eyebrow">A Vault of Rare Words</div><div class="gtitle">The Vocabulary Vault</div>'+
+   '<div class="rule"><span class="ln"></span><span class="dot">✦</span><span class="ln"></span></div>'+
+   '<p class="tagline">Ten uncommon words, four definitions each. Choose the true meaning — then learn where the word comes from.</p>'+
+   '<div class="center"><button class="btn" id="go">Begin</button></div>'+
+   '<div class="langnote">English only · '+Curiosa.t("g_vocab_note")+'</div>'+
+   '<a class="backlink" href="../index.html">← '+Curiosa.t("back")+'</a></div>';
+  app.querySelector('#go').onclick=startGame;}
+function startGame(){var chosen=shuffle(WORDS).slice(0,PER).map(function(item){
+  var correct=item.d[0];var opts=shuffle(item.d);return {w:item.w,p:item.p,e:item.e,opts:opts,correct:correct};});
+  st={qs:chosen,idx:0,score:0,answered:false};renderQ();}
+function renderQ(){var s=st,item=s.qs[s.idx],n=s.idx+1,total=s.qs.length;
+  app.innerHTML='<div class="view"><div class="qhead"><span class="qmeta">Word '+n+' / '+total+'</span>'+
+   '<span class="scoreline">Score <b>'+s.score+'</b></span></div>'+
+   '<div class="bar"><i style="width:'+((n-1)/total*100)+'%"></i></div>'+
+   '<div class="word">'+item.w+'</div><div class="pron">/ '+item.p+' /</div><div class="opts" id="opts"></div>'+
+   '<div class="feedback" id="fb"><div class="verdict" id="vd"></div><div class="explain" id="ex"></div>'+
+   '<div class="nextrow"><button class="btn" id="next">'+(n<total?'Next →':'See Results →')+'</button></div></div>'+
+   '<a class="backlink" href="../index.html">← '+Curiosa.t("back")+'</a></div>';
+  var wrap=app.querySelector('#opts');
+  item.opts.forEach(function(o){var b=document.createElement('button');b.className='opt';b.textContent=o;b.onclick=function(){choose(o,b);};wrap.appendChild(b);});
+  app.querySelector('#next').onclick=advance;}
+function choose(o,btn){if(st.answered)return;st.answered=true;
+  var item=st.qs[st.idx],correct=(o===item.correct);
+  app.querySelectorAll('.opt').forEach(function(b){b.classList.add('locked');
+    if(b.textContent===item.correct)b.classList.add('correct');else if(b===btn)b.classList.add('wrong');else b.classList.add('dim');});
+  if(correct)st.score++;
+  var vd=app.querySelector('#vd');vd.textContent=correct?'✦ Correct':'✕ Not quite';vd.className='verdict '+(correct?'good':'bad');
+  app.querySelector('#ex').innerHTML=item.e;app.querySelector('#fb').classList.add('show');
+  app.querySelector('.scoreline').innerHTML='Score <b>'+st.score+'</b>';}
+function advance(){if(st.idx<st.qs.length-1){st.idx++;st.answered=false;renderQ();}else results();}
+function results(){var total=st.qs.length,pct=st.score/total,r=RANKS.find(function(x){return pct>=x.min;});
+  var isBest=Curiosa.saveScore('vocab',st.score);
+  app.innerHTML='<div class="view"><div class="res-title">Vault Sealed</div>'+
+   (isBest?'<div class="newbest">'+Curiosa.t("newBest")+'</div>':'')+
+   '<div class="rank">'+r.t+'</div><div class="scorebig">'+st.score+'<small> / '+total+'</small></div>'+
+   '<p class="res-sub">'+r.d+'</p>'+
+   '<div class="res-actions"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="menu">'+Curiosa.t("mainGate")+'</button></div>'+
+   '<a class="backlink" href="../index.html">← '+Curiosa.t("back")+'</a></div>';
+  app.querySelector('#again').onclick=startGame;app.querySelector('#menu').onclick=home;}
+home();
+</script>
+</body>
+</html>
