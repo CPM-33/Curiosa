@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Scores — Curiosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/shared.css">
+<style>
+  .wrap{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:18px 18px 60px}
+  h1{font-family:'Cinzel',serif;font-weight:700;text-align:center;font-size:clamp(2rem,6vw,3rem);letter-spacing:.05em}
+  html[lang="ar"] h1{font-family:'Amiri',serif;letter-spacing:0}
+  .sub{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.04rem;max-width:480px;margin:12px auto 26px;line-height:1.5}
+  .panel{background:linear-gradient(180deg,var(--parch1),var(--parch2));border:1px solid var(--line);border-radius:4px;box-shadow:0 18px 44px -22px var(--shadow);padding:8px 8px}
+  .panel::before{content:none}
+  .scoretable{width:100%;border-collapse:collapse}
+  .scoretable th{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);text-align:start;padding:14px 14px 10px}
+  html[lang="ar"] .scoretable th{font-family:'Amiri',serif;letter-spacing:0;font-size:.85rem}
+  .scoretable td{padding:14px;border-top:1px solid rgba(188,166,119,.45);vertical-align:middle}
+  .gname{font-family:'Cinzel',serif;font-size:1.02rem;letter-spacing:.02em}
+  html[lang="ar"] .gname{font-family:'Amiri',serif;letter-spacing:0;font-size:1.15rem}
+  .gname a{color:var(--ink);text-decoration:none}.gname a:hover{color:var(--oxblood)}
+  .bestcell{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--verdigris);white-space:nowrap}
+  .bestcell small{font-size:.7rem;color:var(--ink-soft);font-family:'EB Garamond',serif;font-style:italic}
+  .playscell{color:var(--ink-soft);text-align:center;font-size:1.05rem}
+  .none{color:var(--ink-soft);opacity:.6}
+  .actions{display:flex;justify-content:center;margin-top:24px}
+  .reset{cursor:pointer;font-family:'Cinzel',serif;letter-spacing:.12em;text-transform:uppercase;font-size:.66rem;color:var(--oxblood);background:none;border:1px solid var(--line);border-radius:3px;padding:10px 18px;transition:background .15s}
+  .reset:hover{background:rgba(156,61,40,.08)}
+  html[lang="ar"] .reset{font-family:'Amiri',serif;letter-spacing:0;font-size:.9rem}
+  @media(max-width:560px){.scoretable td,.scoretable th{padding:11px 9px}.bestcell{font-size:1.2rem}}
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="wrap">
+  <h1 id="title"></h1>
+  <p class="sub" id="sub"></p>
+  <div class="panel">
+    <table class="scoretable">
+      <thead><tr><th id="hHall"></th><th id="hBest"></th><th id="hPlays" style="text-align:center"></th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="actions"><button class="reset" id="reset"></button></div>
+</div>
+<script src="assets/strings.js"></script>
+<script>window.CURIOSA_ROOT="";</script>
+<script src="assets/core.js"></script>
+<script>
+  var t=Curiosa.t;
+  function render(){
+    document.getElementById("title").textContent=t("scores_title");
+    document.getElementById("sub").textContent=t("scores_sub");
+    document.getElementById("hHall").textContent=t("scores_hall");
+    document.getElementById("hBest").textContent=t("scores_best");
+    document.getElementById("hPlays").textContent=t("scores_plays");
+    document.getElementById("reset").textContent=t("scores_reset");
+    var scores=Curiosa.getScores();
+    document.getElementById("rows").innerHTML=Curiosa.GAMES.map(function(g){
+      var s=scores[g.id]||{best:0,plays:0};
+      var label=t(g.name)+(g.id==="vocab"?" ("+t("g_vocab_note")+")":"");
+      var bestCell = s.plays>0
+        ? '<span class="bestcell">'+s.best+' <small>'+t(g.unit)+'</small></span>'
+        : '<span class="none">'+t("scores_none")+'</span>';
+      return '<tr><td class="gname"><a href="'+Curiosa.ROOT+g.file+'">'+label+'</a></td>'+
+        '<td>'+bestCell+'</td>'+
+        '<td class="playscell">'+(s.plays||0)+'</td>'+
+        '<td style="text-align:end"><a class="reset" style="text-decoration:none" href="'+Curiosa.ROOT+g.file+'">'+t("scores_play")+'</a></td></tr>';
+    }).join("");
+  }
+  document.getElementById("reset").onclick=function(){
+    if(confirm(t("scores_reset_confirm"))){ Curiosa.resetScores(); render(); }
+  };
+  render();
+</script>
+</body>
+</html>

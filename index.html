@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curiosa — Learning Games for the Curious</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/shared.css">
+<style>
+  .wrap{position:relative;z-index:1;max-width:940px;margin:0 auto;padding:10px 18px 60px}
+  .hero{text-align:center;position:relative;padding:24px 0 14px}
+  .compass{position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:220px;height:220px;opacity:.12;color:var(--ink);pointer-events:none}
+  h1{position:relative;font-family:'Cinzel',serif;font-weight:700;font-size:clamp(2.6rem,8vw,4.4rem);letter-spacing:.06em;line-height:.98}
+  html[lang="ar"] h1{font-family:'Amiri',serif;letter-spacing:0}
+  .sub{position:relative;font-family:'Cinzel',serif;font-weight:500;letter-spacing:.16em;text-transform:uppercase;font-size:.74rem;color:var(--ink-soft);margin-top:12px}
+  html[lang="ar"] .sub{font-family:'Amiri',serif;letter-spacing:0;font-size:.95rem}
+  .intro{position:relative;text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.12rem;max-width:560px;margin:14px auto 8px;line-height:1.55}
+  .section-label{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft);text-align:center;margin:46px 0 22px}
+  html[lang="ar"] .section-label{font-family:'Amiri',serif;letter-spacing:0;font-size:1rem}
+  .halls{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px}
+  .hall{position:relative;display:flex;flex-direction:column;background:linear-gradient(180deg,var(--parch1),#e7d6b3);border:1px solid var(--line);border-radius:4px;padding:24px 22px 22px;text-decoration:none;color:inherit;box-shadow:0 14px 34px -20px var(--shadow);transition:transform .2s,box-shadow .2s;min-height:210px}
+  .hall::before{content:"";position:absolute;inset:7px;border:1px solid rgba(168,129,47,.4);border-radius:2px;pointer-events:none}
+  .hall.live{cursor:pointer}.hall.live:hover{transform:translateY(-5px);box-shadow:0 22px 42px -22px var(--shadow)}
+  .hall.soon{opacity:.7}
+  .badge{position:absolute;top:16px;inset-inline-end:16px;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;padding:4px 9px;border-radius:2px}
+  html[lang="ar"] .badge{font-family:'Amiri',serif;letter-spacing:0;font-size:.7rem}
+  .badge.open{background:var(--verdigris);color:var(--parch1)}.badge.dev{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+  .hall .ic{width:42px;height:42px;color:var(--oxblood);margin-bottom:16px}
+  .hall.c1 .ic{color:var(--verdigris)}.hall.c2 .ic{color:var(--oxblood)}.hall.c3 .ic{color:var(--verdigris)}.hall.c4 .ic{color:var(--gold)}.hall.c5 .ic{color:var(--oxblood)}
+  .hall h3{font-family:'Cinzel',serif;font-size:1.1rem;letter-spacing:.03em;margin-bottom:8px;line-height:1.2}
+  html[lang="ar"] .hall h3{font-family:'Amiri',serif;letter-spacing:0;font-size:1.25rem}
+  .hall p{font-size:.97rem;color:var(--ink-soft);line-height:1.45;flex:1}
+  .hall .enter{margin-top:14px;font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--oxblood)}
+  html[lang="ar"] .hall .enter{font-family:'Amiri',serif;letter-spacing:0;font-size:.9rem}
+  .hall.soon .enter{color:var(--ink-soft)}
+  footer{text-align:center;margin-top:50px;font-size:.92rem;color:var(--ink-soft);line-height:1.6}
+  footer .small{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;opacity:.7}
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="wrap">
+  <header class="hero">
+    <svg class="compass" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.8">
+      <circle cx="50" cy="50" r="46"/><circle cx="50" cy="50" r="38"/>
+      <path d="M50 6 L56 50 L50 94 L44 50 Z" fill="currentColor" stroke="none" opacity="0.5"/>
+      <path d="M6 50 L50 56 L94 50 L50 44 Z" fill="currentColor" stroke="none" opacity="0.3"/>
+      <circle cx="50" cy="50" r="3" fill="currentColor" stroke="none"/>
+    </svg>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1>CURIOSA</h1>
+    <div class="sub" id="sub"></div>
+    <div class="rule"><span class="ln"></span><span class="dot">✦</span><span class="ln"></span></div>
+    <p class="intro" id="intro"></p>
+  </header>
+  <div class="section-label" id="lblOpen"></div>
+  <div class="halls" id="openHalls"></div>
+  <div class="section-label" id="lblSoon"></div>
+  <div class="halls" id="soonHalls"></div>
+  <footer><span id="footerTxt"></span><br><span class="small">Curiosa</span></footer>
+</div>
+
+<script src="assets/strings.js"></script>
+<script>window.CURIOSA_ROOT="";</script>
+<script src="assets/core.js"></script>
+<script>
+  var t=Curiosa.t;
+  var IC={
+    globe:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.5 6.5c3 2 10 2 13 0M5.5 17.5c3-2 10-2 13 0" stroke-width="1"/></svg>',
+    sigma:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 6h16M4 6l6 6-6 6h16"/></svg>',
+    map:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>',
+    clock:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg>',
+    book:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M5 4h14v13H8l-3 3V4zM8 9h8M8 12h5"/></svg>',
+    bulb:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.3 1 2.5h6c0-1.2.3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>',
+    flask:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M9 3h6M10 3v6l-4 8a2 2 0 0 0 2 3h8a2 2 0 0 0 2-3l-4-8V3"/></svg>',
+    star:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>',
+    quill:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 19V5a1 1 0 0 1 1-1h5v16H5a1 1 0 0 1-1-1zM14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5z"/></svg>'
+  };
+  var OPEN=[
+    {file:"games/trivia.html",     c:"c1", ic:IC.globe, name:"g_trivia",   d:"d_trivia"},
+    {file:"games/arithmetic.html", c:"c2", ic:IC.sigma, name:"g_arith",    d:"d_arith"},
+    {file:"games/atlas.html",      c:"c3", ic:IC.map,   name:"g_atlas",    d:"d_atlas"},
+    {file:"games/timeline.html",   c:"c4", ic:IC.clock, name:"g_timeline", d:"d_timeline"},
+    {file:"games/vocabulary.html", c:"c5", ic:IC.book,  name:"g_vocab",    d:"d_vocab"}
+  ];
+  var SOON=[
+    {c:"c4", ic:IC.bulb,  name:"hall_logic",   d:"d_logic"},
+    {c:"c3", ic:IC.flask, name:"hall_science", d:"d_science"},
+    {c:"c4", ic:IC.star,  name:"hall_daily",   d:"d_daily"},
+    {c:"c5", ic:IC.quill, name:"hall_lit",     d:"d_lit"}
+  ];
+  function render(){
+    document.getElementById("eyebrow").textContent=t("home_eyebrow");
+    document.getElementById("sub").textContent=t("home_sub");
+    document.getElementById("intro").textContent=t("home_intro");
+    document.getElementById("lblOpen").textContent=t("open_halls");
+    document.getElementById("lblSoon").textContent=t("under_constr");
+    document.getElementById("footerTxt").textContent=t("footer");
+    document.getElementById("openHalls").innerHTML=OPEN.map(function(h){
+      var note=(h.name==="g_vocab")?' <span style="font-style:italic;font-size:.85em;color:var(--ink-soft)">('+t("g_vocab_note")+')</span>':'';
+      return '<a class="hall live '+h.c+'" href="'+h.file+'"><span class="badge open">'+t("badge_open")+'</span>'+
+        h.ic+'<h3>'+t(h.name)+note+'</h3><p>'+t(h.d)+'</p><span class="enter">'+t("enter")+'</span></a>';
+    }).join("");
+    document.getElementById("soonHalls").innerHTML=SOON.map(function(h){
+      return '<div class="hall soon '+h.c+'"><span class="badge dev">'+t("badge_dev")+'</span>'+
+        h.ic+'<h3>'+t(h.name)+'</h3><p>'+t(h.d)+'</p><span class="enter">'+t("soon")+'</span></div>';
+    }).join("");
+  }
+  render();
+</script>
+</body>
+</html>
