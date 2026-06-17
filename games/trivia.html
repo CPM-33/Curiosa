@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Trivia Expedition — Curiosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/shared.css">
+<style>
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .card{cursor:pointer;text-align:start;background:rgba(255,250,238,.55);border:1px solid var(--line);border-radius:3px;padding:16px;transition:transform .18s,box-shadow .18s,background .18s;display:flex;gap:12px;align-items:flex-start}
+  .card:hover{transform:translateY(-3px);box-shadow:0 12px 22px -12px var(--shadow);background:rgba(255,250,238,.92)}
+  .card .ic{width:34px;height:34px;flex:none;color:var(--oxblood)}
+  .card.geo .ic{color:var(--verdigris)}.card.hist .ic{color:var(--gold)}.card.mix .ic{color:var(--ink-soft)}
+  .card h3{font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.03em}
+  html[lang="ar"] .card h3{font-family:'Amiri',serif;letter-spacing:0;font-size:1.15rem}
+  .qhead{display:flex;justify-content:space-between;align-items:center}
+  .qmeta{font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+  html[lang="ar"] .qmeta{font-family:'Amiri',serif;letter-spacing:0;font-size:.85rem}
+  .scoreline{display:flex;gap:16px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.1em}
+  .scoreline b{color:var(--oxblood)}.scoreline .st b{color:var(--verdigris)}
+  .bar{height:6px;background:rgba(120,96,52,.18);border-radius:6px;overflow:hidden;margin:14px 0 24px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--oxblood));border-radius:6px;transition:width .45s}
+  .qtext{font-size:1.42rem;line-height:1.4;margin-bottom:22px;min-height:2em}
+  .opts{display:grid;gap:10px}
+  .opt{cursor:pointer;text-align:start;font-size:1.06rem;background:rgba(255,250,238,.55);border:1px solid var(--line);border-radius:3px;padding:13px 15px;color:var(--ink);display:flex;gap:12px;align-items:center;transition:transform .12s,background .14s,border-color .14s}
+  .opt .key{font-family:'Cinzel',serif;font-size:.76rem;width:25px;height:25px;flex:none;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--ink-soft)}
+  .opt:not(.locked):hover{background:rgba(255,250,238,.95);transform:translateX(3px);border-color:var(--gold)}
+  html[dir="rtl"] .opt:not(.locked):hover{transform:translateX(-3px)}
+  .opt.correct{background:rgba(53,107,94,.16);border-color:var(--verdigris)}.opt.correct .key{background:var(--verdigris);color:#fff;border-color:var(--verdigris)}
+  .opt.wrong{background:rgba(156,61,40,.13);border-color:var(--oxblood)}.opt.wrong .key{background:var(--oxblood);color:#fff;border-color:var(--oxblood)}
+  .opt.dim{opacity:.55}.opt.locked{cursor:default}
+  .feedback{margin-top:20px;border-top:1px dashed var(--line);padding-top:16px;opacity:0;max-height:0;overflow:hidden;transition:opacity .35s}
+  .feedback.show{opacity:1;max-height:420px}
+  .verdict{font-family:'Cinzel',serif;letter-spacing:.14em;text-transform:uppercase;font-size:.78rem;margin-bottom:6px}
+  .verdict.good{color:var(--verdigris)}.verdict.bad{color:var(--oxblood)}
+  .explain{font-size:1.02rem;line-height:1.55;font-style:italic}
+  .nextrow{display:flex;justify-content:flex-end;margin-top:16px}
+  .res-title{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft);text-align:center;margin-bottom:8px}
+  .rank{font-family:'Cinzel',serif;font-weight:700;text-align:center;font-size:clamp(1.7rem,5vw,2.4rem);color:var(--oxblood)}
+  html[lang="ar"] .rank,html[lang="ar"] .res-title,html[lang="ar"] .qmeta{font-family:'Amiri',serif;letter-spacing:0}
+  .scorebig{text-align:center;margin:18px 0 4px;font-size:3.1rem;font-family:'Cinzel',serif}.scorebig small{font-size:1.2rem;color:var(--ink-soft)}
+  .res-sub{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.04rem;max-width:420px;margin:6px auto 22px;line-height:1.5}
+  .res-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .newbest{text-align:center;color:var(--verdigris);font-family:'Cinzel',serif;letter-spacing:.1em;font-size:.78rem;margin-bottom:8px}
+  @media(max-width:560px){.cards{grid-template-columns:1fr}.qtext{font-size:1.24rem}}
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="gamewrap"><div class="stage">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <div id="app"></div>
+</div></div>
+
+<script src="../assets/strings.js"></script>
+<script>window.CURIOSA_ROOT="../";</script>
+<script src="../assets/core.js"></script>
+<script>
+var t=Curiosa.t, L=Curiosa.lang;
+function tr(o){return o[L()]||o.en;}
+
+// labels for this game (trilingual)
+var G={
+  expedition:{en:"A Trivia Expedition",fr:"Une Expédition de Connaissances",ar:"رحلة معارف"},
+  intro:{en:"Ten questions ranging across numbers, nations and the ages. Choose your field of study.",fr:"Dix questions à travers les nombres, les nations et les âges. Choisissez votre domaine.",ar:"عشرة أسئلة عبر الأرقام والأمم والعصور. اختر مجال دراستك."},
+  pick:{en:"Select an Expedition",fr:"Choisissez une expédition",ar:"اختر رحلة"},
+  math:{en:"Mathematics",fr:"Mathématiques",ar:"الرياضيات"},
+  geo:{en:"Geography",fr:"Géographie",ar:"الجغرافيا"},
+  hist:{en:"History",fr:"Histoire",ar:"التاريخ"},
+  grand:{en:"The Grand Tour",fr:"Le Grand Tour",ar:"الجولة الكبرى"},
+  dmath:{en:"Logic, proportion & reason.",fr:"Logique, proportion et raison.",ar:"منطق ونسب وتفكير."},
+  dgeo:{en:"Capitals, peaks & frontiers.",fr:"Capitales, sommets et frontières.",ar:"عواصم وقمم وحدود."},
+  dhist:{en:"Empires & turning points.",fr:"Empires et tournants.",ar:"إمبراطوريات ومنعطفات."},
+  dgrand:{en:"All three, at random.",fr:"Les trois, au hasard.",ar:"الثلاثة معًا عشوائيًا."},
+  question:{en:"Question",fr:"Question",ar:"سؤال"},
+  ranks:[
+    {min:.9, t:{en:"Polymath Laureate",fr:"Lauréat Polymathe",ar:"عالِم موسوعي"}, d:{en:"Extraordinary range across every field.",fr:"Une portée extraordinaire dans tous les domaines.",ar:"معرفة استثنائية في كل المجالات."}},
+    {min:.7, t:{en:"Master Cartographer",fr:"Maître Cartographe",ar:"خبير المعارف"}, d:{en:"A formidable command of the world.",fr:"Une maîtrise remarquable du monde.",ar:"تمكُّن لافت من معارف العالم."}},
+    {min:.5, t:{en:"Seasoned Traveler",fr:"Voyageur Aguerri",ar:"رحّالة متمرّس"}, d:{en:"Solid footing, with ground still to explore.",fr:"De bonnes bases, et encore à explorer.",ar:"أساس متين وما زال هناك للاستكشاف."}},
+    {min:.3, t:{en:"Curious Apprentice",fr:"Apprenti Curieux",ar:"متدرّب فضولي"}, d:{en:"The expedition has begun.",fr:"L'expédition a commencé.",ar:"بدأت الرحلة للتو."}},
+    {min:0,  t:{en:"Fresh Recruit",fr:"Nouvelle Recrue",ar:"مستجِدّ"}, d:{en:"Everyone starts at the trailhead.",fr:"Tout le monde commence au départ du sentier.",ar:"الجميع يبدأ من البداية."}}
+  ]
+};
+
+var BANK={
+ math:[
+  {q:{en:"What is the value of 0! (zero factorial)?",fr:"Quelle est la valeur de 0! (factorielle de zéro) ?",ar:"ما قيمة ‎0!‎ (مضروب الصفر)؟"},
+   a:[{en:"1",fr:"1",ar:"١"},{en:"0",fr:"0",ar:"٠"},{en:"Undefined",fr:"Indéfini",ar:"غير معرّف"},{en:"Infinity",fr:"Infini",ar:"لا نهاية"}],
+   e:{en:"By convention 0! = 1 — the 'empty product', which keeps formulas for combinations consistent.",fr:"Par convention 0! = 1 — le « produit vide », qui rend cohérentes les formules de combinaisons.",ar:"اصطلاحًا ‎0! = 1‎ — وهو «الجداء الفارغ» الذي يبقي صيغ التوافيق متّسقة."}},
+  {q:{en:"The interior angles of a hexagon sum to how many degrees?",fr:"La somme des angles intérieurs d'un hexagone vaut combien de degrés ?",ar:"كم مجموع الزوايا الداخلية للشكل السداسي بالدرجات؟"},
+   a:[{en:"720°",fr:"720°",ar:"٧٢٠°"},{en:"540°",fr:"540°",ar:"٥٤٠°"},{en:"640°",fr:"640°",ar:"٦٤٠°"},{en:"900°",fr:"900°",ar:"٩٠٠°"}],
+   e:{en:"Use (n−2)×180°. For six sides: 4×180° = 720°.",fr:"On applique (n−2)×180°. Pour six côtés : 4×180° = 720°.",ar:"نستخدم ‎(n−2)×180°‎. لستة أضلاع: ‎4×180° = 720°‎."}},
+  {q:{en:"Rolling two dice, what is the probability the sum is 7?",fr:"En lançant deux dés, quelle est la probabilité d'obtenir 7 ?",ar:"عند رمي نردين، ما احتمال أن يكون المجموع ٧؟"},
+   a:[{en:"1/6",fr:"1/6",ar:"١/٦"},{en:"1/8",fr:"1/8",ar:"١/٨"},{en:"1/12",fr:"1/12",ar:"١/١٢"},{en:"5/36",fr:"5/36",ar:"٥/٣٦"}],
+   e:{en:"Six of the 36 outcomes sum to 7, so 6/36 = 1/6 — the most likely total.",fr:"Six des 36 résultats donnent 7, soit 6/36 = 1/6 — le total le plus probable.",ar:"ستة من ٣٦ ناتجًا مجموعها ٧، أي ‎6/36 = 1/6‎ — وهو الأكثر احتمالًا."}},
+  {q:{en:"What is the derivative of sin(x)?",fr:"Quelle est la dérivée de sin(x) ?",ar:"ما مشتقة الدالة جا(س) [sin(x)]؟"},
+   a:[{en:"cos(x)",fr:"cos(x)",ar:"جتا(س) [cos(x)]"},{en:"−cos(x)",fr:"−cos(x)",ar:"−جتا(س)"},{en:"−sin(x)",fr:"−sin(x)",ar:"−جا(س)"},{en:"tan(x)",fr:"tan(x)",ar:"ظا(س)"}],
+   e:{en:"d/dx[sin x] = cos x; differentiating cycles every four steps.",fr:"d/dx[sin x] = cos x ; la dérivation revient au point de départ tous les quatre pas.",ar:"مشتقة جا(س) هي جتا(س)، وتتكرّر الدورة كل أربع خطوات."}},
+  {q:{en:"Which kind of number is the square root of 2?",fr:"Quel type de nombre est la racine carrée de 2 ?",ar:"أيُّ نوعٍ من الأعداد هو الجذر التربيعي للعدد ٢؟"},
+   a:[{en:"Irrational",fr:"Irrationnel",ar:"عدد غير نسبي (أصمّ)"},{en:"Rational",fr:"Rationnel",ar:"عدد نسبي"},{en:"Imaginary",fr:"Imaginaire",ar:"عدد تخيّلي"},{en:"Integer",fr:"Entier",ar:"عدد صحيح"}],
+   e:{en:"√2 ≈ 1.414… cannot be written as a ratio of integers — the classic irrational number.",fr:"√2 ≈ 1,414… ne peut s'écrire comme rapport d'entiers — l'exemple classique d'irrationnel.",ar:"الجذر التربيعي لـ٢ ≈ ١٫٤١٤، ولا يمكن كتابته كنسبة بين عددين صحيحين — وهو المثال الكلاسيكي للعدد الأصمّ."}},
+  {q:{en:"In a normal distribution, about what share of data lies within one standard deviation of the mean?",fr:"Dans une loi normale, quelle proportion des données se trouve à un écart-type de la moyenne ?",ar:"في التوزيع الطبيعي، ما النسبة التقريبية للبيانات ضمن انحرافٍ معياريٍّ واحدٍ عن المتوسط؟"},
+   a:[{en:"About 68%",fr:"Environ 68 %",ar:"نحو ٦٨٪"},{en:"About 50%",fr:"Environ 50 %",ar:"نحو ٥٠٪"},{en:"About 95%",fr:"Environ 95 %",ar:"نحو ٩٥٪"},{en:"About 34%",fr:"Environ 34 %",ar:"نحو ٣٤٪"}],
+   e:{en:"The 68–95–99.7 rule: ~68% within ±1 SD, ~95% within ±2 SD.",fr:"La règle 68–95–99,7 : ~68 % à ±1 écart-type, ~95 % à ±2.",ar:"قاعدة ٦٨–٩٥–٩٩٫٧: نحو ٦٨٪ ضمن انحراف واحد، ونحو ٩٥٪ ضمن انحرافين."}},
+  {q:{en:"What is 2 raised to the 10th power (2¹⁰)?",fr:"Combien vaut 2 puissance 10 (2¹⁰) ?",ar:"كم يساوي ٢ مرفوعًا للأس ١٠ (‎2¹⁰‎)؟"},
+   a:[{en:"1024",fr:"1024",ar:"١٠٢٤"},{en:"512",fr:"512",ar:"٥١٢"},{en:"2048",fr:"2048",ar:"٢٠٤٨"},{en:"1000",fr:"1000",ar:"١٠٠٠"}],
+   e:{en:"2¹⁰ = 1024 — why a 'kilobyte' is often 1024 bytes.",fr:"2¹⁰ = 1024 — d'où un « kilo-octet » de 1024 octets.",ar:"‎2¹⁰ = 1024‎ — ولهذا يُعدّ «الكيلوبايت» غالبًا ١٠٢٤ بايت."}},
+  {q:{en:"What is the approximate value of Euler's number, e?",fr:"Quelle est la valeur approximative du nombre d'Euler, e ?",ar:"ما القيمة التقريبية لعدد أويلر (e)؟"},
+   a:[{en:"2.718",fr:"2,718",ar:"٢٫٧١٨"},{en:"3.142",fr:"3,142",ar:"٣٫١٤٢"},{en:"1.618",fr:"1,618",ar:"١٫٦١٨"},{en:"1.414",fr:"1,414",ar:"١٫٤١٤"}],
+   e:{en:"e ≈ 2.718, the base of natural logarithms. (3.142 is π.)",fr:"e ≈ 2,718, la base des logarithmes naturels. (3,142 ≈ π.)",ar:"‎e ≈ 2.718‎ وهو أساس اللوغاريتمات الطبيعية. (و٣٫١٤٢ هو باي.)"}},
+  {q:{en:"How many edges does a cube have?",fr:"Combien d'arêtes possède un cube ?",ar:"كم عدد أحرف (حواف) المكعّب؟"},
+   a:[{en:"12",fr:"12",ar:"١٢"},{en:"8",fr:"8",ar:"٨"},{en:"6",fr:"6",ar:"٦"},{en:"16",fr:"16",ar:"١٦"}],
+   e:{en:"A cube has 6 faces, 8 vertices and 12 edges (V−E+F = 2).",fr:"Un cube a 6 faces, 8 sommets et 12 arêtes (S−A+F = 2).",ar:"للمكعّب ٦ أوجه و٨ رؤوس و١٢ حرفًا (‎V−E+F = 2‎)."}},
+  {q:{en:"What is log₁₀(1000)?",fr:"Combien vaut log₁₀(1000) ?",ar:"كم يساوي ‎log₁₀(1000)‎؟"},
+   a:[{en:"3",fr:"3",ar:"٣"},{en:"2",fr:"2",ar:"٢"},{en:"4",fr:"4",ar:"٤"},{en:"10",fr:"10",ar:"١٠"}],
+   e:{en:"Ten to what power gives 1000? 10³ = 1000, so 3.",fr:"Dix à quelle puissance donne 1000 ? 10³ = 1000, donc 3.",ar:"عشرة لأيّ أُسٍّ تعطي ١٠٠٠؟ ‎10³ = 1000‎، فالجواب ٣."}},
+  {q:{en:"The interior angles of a triangle always sum to how many degrees?",fr:"La somme des angles intérieurs d'un triangle vaut toujours combien de degrés ?",ar:"كم مجموع الزوايا الداخلية لأيّ مثلّثٍ بالدرجات؟"},
+   a:[{en:"180°",fr:"180°",ar:"١٨٠°"},{en:"360°",fr:"360°",ar:"٣٦٠°"},{en:"90°",fr:"90°",ar:"٩٠°"},{en:"270°",fr:"270°",ar:"٢٧٠°"}],
+   e:{en:"In flat (Euclidean) geometry the three angles always add to 180°.",fr:"En géométrie plane (euclidienne), les trois angles font toujours 180°.",ar:"في الهندسة المستوية (الإقليدية) يكون مجموع الزوايا الثلاث دائمًا ١٨٠°."}},
+  {q:{en:"Which of these is a prime number?",fr:"Lequel de ces nombres est premier ?",ar:"أيُّ هذه الأعداد عددٌ أوّلي؟"},
+   a:[{en:"17",fr:"17",ar:"١٧"},{en:"21",fr:"21",ar:"٢١"},{en:"27",fr:"27",ar:"٢٧"},{en:"15",fr:"15",ar:"١٥"}],
+   e:{en:"17 has no divisors but 1 and itself; the others factor (21=3×7, 27=3³, 15=3×5).",fr:"17 n'a pas d'autre diviseur que 1 et lui-même ; les autres se factorisent (21=3×7, 27=3³, 15=3×5).",ar:"العدد ١٧ لا يقبل القسمة إلا على ١ ونفسه، أمّا البقية فتتحلّل (٢١=٣×٧، ٢٧=٣³، ١٥=٣×٥)."}},
+  {q:{en:"What is 7! (seven factorial)?",fr:"Combien vaut 7! (factorielle de sept) ?",ar:"كم يساوي ‎7!‎ (مضروب سبعة)؟"},
+   a:[{en:"5040",fr:"5040",ar:"٥٠٤٠"},{en:"720",fr:"720",ar:"٧٢٠"},{en:"49",fr:"49",ar:"٤٩"},{en:"823543",fr:"823543",ar:"٨٢٣٥٤٣"}],
+   e:{en:"7! = 7×6×5×4×3×2×1 = 5040.",fr:"7! = 7×6×5×4×3×2×1 = 5040.",ar:"‎7! = 7×6×5×4×3×2×1 = 5040‎."}},
+  {q:{en:"What is the square root of 144?",fr:"Quelle est la racine carrée de 144 ?",ar:"ما الجذر التربيعي للعدد ١٤٤؟"},
+   a:[{en:"12",fr:"12",ar:"١٢"},{en:"14",fr:"14",ar:"١٤"},{en:"11",fr:"11",ar:"١١"},{en:"72",fr:"72",ar:"٧٢"}],
+   e:{en:"12 × 12 = 144.",fr:"12 × 12 = 144.",ar:"‎12 × 12 = 144‎."}},
+  {q:{en:"What is 15% of 200?",fr:"Combien font 15 % de 200 ?",ar:"كم يساوي ١٥٪ من ٢٠٠؟"},
+   a:[{en:"30",fr:"30",ar:"٣٠"},{en:"15",fr:"15",ar:"١٥"},{en:"45",fr:"45",ar:"٤٥"},{en:"20",fr:"20",ar:"٢٠"}],
+   e:{en:"10% of 200 is 20, and 5% is 10, so 15% = 30.",fr:"10 % de 200 font 20, et 5 % font 10, donc 15 % = 30.",ar:"١٠٪ من ٢٠٠ هي ٢٠، و٥٪ هي ١٠، إذن ١٥٪ = ٣٠."}},
+  {q:{en:"In the sequence 1, 1, 2, 3, 5, 8… what number comes next?",fr:"Dans la suite 1, 1, 2, 3, 5, 8… quel nombre vient ensuite ?",ar:"في المتتالية ١، ١، ٢، ٣، ٥، ٨… ما العدد التالي؟"},
+   a:[{en:"13",fr:"13",ar:"١٣"},{en:"11",fr:"11",ar:"١١"},{en:"16",fr:"16",ar:"١٦"},{en:"10",fr:"10",ar:"١٠"}],
+   e:{en:"Each Fibonacci term is the sum of the two before it: 5 + 8 = 13.",fr:"Chaque terme de Fibonacci est la somme des deux précédents : 5 + 8 = 13.",ar:"كلّ حدٍّ في متتالية فيبوناتشي هو مجموع الحدّين قبله: ٥ + ٨ = ١٣."}},
+  {q:{en:"What is the greatest common divisor (GCD) of 12 and 18?",fr:"Quel est le plus grand commun diviseur (PGCD) de 12 et 18 ?",ar:"ما القاسم المشترك الأكبر للعددين ١٢ و١٨؟"},
+   a:[{en:"6",fr:"6",ar:"٦"},{en:"3",fr:"3",ar:"٣"},{en:"12",fr:"12",ar:"١٢"},{en:"36",fr:"36",ar:"٣٦"}],
+   e:{en:"12 = 2²×3, 18 = 2×3²; the shared factors give 2×3 = 6.",fr:"12 = 2²×3, 18 = 2×3² ; les facteurs communs donnent 2×3 = 6.",ar:"‎12 = 2²×3‎ و‎18 = 2×3²‎، والعوامل المشتركة تعطي ‎2×3 = 6‎."}},
+  {q:{en:"What is the sum of all whole numbers from 1 to 100?",fr:"Quelle est la somme de tous les entiers de 1 à 100 ?",ar:"ما مجموع الأعداد الصحيحة من ١ إلى ١٠٠؟"},
+   a:[{en:"5050",fr:"5050",ar:"٥٠٥٠"},{en:"5000",fr:"5000",ar:"٥٠٠٠"},{en:"10000",fr:"10000",ar:"١٠٠٠٠"},{en:"4950",fr:"4950",ar:"٤٩٥٠"}],
+   e:{en:"Pair them: 1+100, 2+99… fifty pairs of 101 = 5050 (the young Gauss trick).",fr:"On apparie : 1+100, 2+99… cinquante paires de 101 = 5050 (l'astuce du jeune Gauss).",ar:"نُزاوجها: ١+١٠٠، ٢+٩٩… خمسون زوجًا قيمة كلٍّ ١٠١ = ٥٠٥٠ (حيلة الطفل غاوس)."}},
+  {q:{en:"How many degrees are in a right angle?",fr:"Combien de degrés compte un angle droit ?",ar:"كم درجةً في الزاوية القائمة؟"},
+   a:[{en:"90°",fr:"90°",ar:"٩٠°"},{en:"45°",fr:"45°",ar:"٤٥°"},{en:"180°",fr:"180°",ar:"١٨٠°"},{en:"60°",fr:"60°",ar:"٦٠°"}],
+   e:{en:"A right angle is a quarter turn — 90 degrees.",fr:"Un angle droit est un quart de tour — 90 degrés.",ar:"الزاوية القائمة رُبع دورة — أي ٩٠ درجة."}},
+  {q:{en:"In binary, what is 1010 in our usual (decimal) numbers?",fr:"En binaire, que vaut 1010 en nombres décimaux habituels ?",ar:"في النظام الثنائي، كم يساوي ‎1010‎ بالأعداد العشرية المعتادة؟"},
+   a:[{en:"10",fr:"10",ar:"١٠"},{en:"8",fr:"8",ar:"٨"},{en:"12",fr:"12",ar:"١٢"},{en:"1010",fr:"1010",ar:"١٠١٠"}],
+   e:{en:"8 + 0 + 2 + 0 = 10 (the 8s and 2s places are on).",fr:"8 + 0 + 2 + 0 = 10 (les rangs des 8 et des 2 sont actifs).",ar:"‎8 + 0 + 2 + 0 = 10‎ (خانتا الثمانية والاثنين مفعّلتان)."}},
+  {q:{en:"What is the value of π (pi) to two decimal places?",fr:"Quelle est la valeur de π (pi) à deux décimales ?",ar:"ما قيمة ط (باي) لأقرب منزلتين عشريتين؟"},
+   a:[{en:"3.14",fr:"3,14",ar:"٣٫١٤"},{en:"3.41",fr:"3,41",ar:"٣٫٤١"},{en:"3.12",fr:"3,12",ar:"٣٫١٢"},{en:"2.72",fr:"2,72",ar:"٢٫٧٢"}],
+   e:{en:"π ≈ 3.14159…, the ratio of a circle's circumference to its diameter.",fr:"π ≈ 3,14159…, le rapport de la circonférence d'un cercle à son diamètre.",ar:"ط ≈ ٣٫١٤١٥٩…، وهي نسبة محيط الدائرة إلى قطرها."}},
+  {q:{en:"What is the length of the longest side of a right triangle called?",fr:"Comment appelle-t-on le plus long côté d'un triangle rectangle ?",ar:"ماذا يُسمّى أطول ضلعٍ في المثلّث القائم الزاوية؟"},
+   a:[{en:"The hypotenuse",fr:"L'hypoténuse",ar:"الوتر"},{en:"The radius",fr:"Le rayon",ar:"نصف القطر"},{en:"The tangent",fr:"La tangente",ar:"المماس"},{en:"The chord",fr:"La corde",ar:"الوتر الدائري"}],
+   e:{en:"The hypotenuse lies opposite the right angle and is the longest side.",fr:"L'hypoténuse est opposée à l'angle droit et constitue le plus long côté.",ar:"الوتر يقابل الزاوية القائمة وهو أطول الأضلاع."}},
+  {q:{en:"What is 25% expressed as a simple fraction?",fr:"Comment écrit-on 25 % en fraction simple ?",ar:"كيف يُكتب ٢٥٪ على هيئة كسرٍ بسيط؟"},
+   a:[{en:"1/4",fr:"1/4",ar:"١/٤"},{en:"1/2",fr:"1/2",ar:"١/٢"},{en:"1/5",fr:"1/5",ar:"١/٥"},{en:"2/5",fr:"2/5",ar:"٢/٥"}],
+   e:{en:"25 per 100 reduces to 1/4.",fr:"25 pour 100 se réduit à 1/4.",ar:"٢٥ من ١٠٠ تُختصر إلى ١/٤."}},
+  {q:{en:"What is the next prime number after 13?",fr:"Quel est le nombre premier qui suit 13 ?",ar:"ما العدد الأوّلي الذي يلي ١٣؟"},
+   a:[{en:"17",fr:"17",ar:"١٧"},{en:"15",fr:"15",ar:"١٥"},{en:"14",fr:"14",ar:"١٤"},{en:"19",fr:"19",ar:"١٩"}],
+   e:{en:"14, 15 and 16 all factor; 17 is the next prime.",fr:"14, 15 et 16 se factorisent ; 17 est le premier suivant.",ar:"١٤ و١٥ و١٦ كلّها تتحلّل، و١٧ هو الأوّلي التالي."}},
+  {q:{en:"What is the value of cos(0)?",fr:"Quelle est la valeur de cos(0) ?",ar:"ما قيمة جتا(٠) [cos(0)]؟"},
+   a:[{en:"1",fr:"1",ar:"١"},{en:"0",fr:"0",ar:"٠"},{en:"−1",fr:"−1",ar:"−١"},{en:"½",fr:"½",ar:"½"}],
+   e:{en:"cos(0) = 1, while sin(0) = 0.",fr:"cos(0) = 1, tandis que sin(0) = 0.",ar:"جتا(٠) = ١، بينما جا(٠) = ٠."}},
+  {q:{en:"What is 3⁴ (three to the fourth power)?",fr:"Combien vaut 3⁴ (trois puissance quatre) ?",ar:"كم يساوي ‎3⁴‎ (ثلاثة أُس أربعة)؟"},
+   a:[{en:"81",fr:"81",ar:"٨١"},{en:"12",fr:"12",ar:"١٢"},{en:"64",fr:"64",ar:"٦٤"},{en:"27",fr:"27",ar:"٢٧"}],
+   e:{en:"3×3×3×3 = 81.",fr:"3×3×3×3 = 81.",ar:"‎3×3×3×3 = 81‎."}},
+  {q:{en:"What is the perimeter of a square whose side is 5?",fr:"Quel est le périmètre d'un carré de côté 5 ?",ar:"ما محيط مربّعٍ طول ضلعه ٥؟"},
+   a:[{en:"20",fr:"20",ar:"٢٠"},{en:"25",fr:"25",ar:"٢٥"},{en:"10",fr:"10",ar:"١٠"},{en:"15",fr:"15",ar:"١٥"}],
+   e:{en:"Four equal sides: 4 × 5 = 20. (Area would be 25.)",fr:"Quatre côtés égaux : 4 × 5 = 20. (L'aire serait 25.)",ar:"أربعة أضلاع متساوية: ‎4 × 5 = 20‎. (أمّا المساحة فـ٢٥.)"}},
+  {q:{en:"Which number is both a perfect square and a perfect cube?",fr:"Quel nombre est à la fois un carré parfait et un cube parfait ?",ar:"أيُّ عددٍ هو مربّعٌ كاملٌ ومكعّبٌ كاملٌ في آنٍ معًا؟"},
+   a:[{en:"64",fr:"64",ar:"٦٤"},{en:"36",fr:"36",ar:"٣٦"},{en:"27",fr:"27",ar:"٢٧"},{en:"100",fr:"100",ar:"١٠٠"}],
+   e:{en:"64 = 8² and also 4³, so it is both.",fr:"64 = 8² et aussi 4³, donc les deux.",ar:"‎64 = 8²‎ وكذلك ‎4³‎، فهو الاثنان معًا."}}
+ ],
+ geo:[
+  {q:{en:"What is the capital of Australia?",fr:"Quelle est la capitale de l'Australie ?",ar:"ما عاصمة أستراليا؟"},
+   a:[{en:"Canberra",fr:"Canberra",ar:"كانبرا"},{en:"Sydney",fr:"Sydney",ar:"سيدني"},{en:"Melbourne",fr:"Melbourne",ar:"ملبورن"},{en:"Perth",fr:"Perth",ar:"بيرث"}],
+   e:{en:"Canberra was built as a compromise capital between Sydney and Melbourne.",fr:"Canberra fut bâtie comme capitale de compromis entre Sydney et Melbourne.",ar:"بُنيت كانبرا عاصمةً توافقيةً بين سيدني وملبورن."}},
+  {q:{en:"What is the capital of New Zealand?",fr:"Quelle est la capitale de la Nouvelle-Zélande ?",ar:"ما عاصمة نيوزيلندا؟"},
+   a:[{en:"Wellington",fr:"Wellington",ar:"ويلينغتون"},{en:"Auckland",fr:"Auckland",ar:"أوكلاند"},{en:"Christchurch",fr:"Christchurch",ar:"كرايستشيرش"},{en:"Hamilton",fr:"Hamilton",ar:"هاملتون"}],
+   e:{en:"Wellington is the capital, though Auckland is the larger city.",fr:"Wellington est la capitale, bien qu'Auckland soit la plus grande ville.",ar:"ويلينغتون هي العاصمة، رغم أنّ أوكلاند أكبر مدينة."}},
+  {q:{en:"Which is the smallest country in the world by area?",fr:"Quel est le plus petit pays du monde par sa superficie ?",ar:"ما أصغر دولة في العالم من حيث المساحة؟"},
+   a:[{en:"Vatican City",fr:"Le Vatican",ar:"مدينة الفاتيكان"},{en:"Monaco",fr:"Monaco",ar:"موناكو"},{en:"Nauru",fr:"Nauru",ar:"ناورو"},{en:"San Marino",fr:"Saint-Marin",ar:"سان مارينو"}],
+   e:{en:"Vatican City covers about 0.49 km² — the smallest sovereign state.",fr:"Le Vatican couvre environ 0,49 km² — le plus petit État souverain.",ar:"تبلغ مساحة الفاتيكان نحو ٠٫٤٩ كم² — أصغر دولة ذات سيادة."}},
+  {q:{en:"In which country is Mount Kilimanjaro?",fr:"Dans quel pays se trouve le Kilimandjaro ?",ar:"في أيّ دولة يقع جبل كليمنجارو؟"},
+   a:[{en:"Tanzania",fr:"Tanzanie",ar:"تنزانيا"},{en:"Kenya",fr:"Kenya",ar:"كينيا"},{en:"Ethiopia",fr:"Éthiopie",ar:"إثيوبيا"},{en:"Uganda",fr:"Ouganda",ar:"أوغندا"}],
+   e:{en:"Kilimanjaro (~5,895 m) rises in northeastern Tanzania.",fr:"Le Kilimandjaro (~5 895 m) s'élève au nord-est de la Tanzanie.",ar:"يرتفع كليمنجارو (نحو ٥٨٩٥ م) في شمال شرق تنزانيا."}},
+  {q:{en:"The Strait of Gibraltar links the Mediterranean to which body of water?",fr:"Le détroit de Gibraltar relie la Méditerranée à quelle étendue d'eau ?",ar:"يصل مضيق جبل طارق البحر المتوسط بأيّ مسطّح مائي؟"},
+   a:[{en:"The Atlantic Ocean",fr:"L'océan Atlantique",ar:"المحيط الأطلسي"},{en:"The Black Sea",fr:"La mer Noire",ar:"البحر الأسود"},{en:"The Red Sea",fr:"La mer Rouge",ar:"البحر الأحمر"},{en:"The Indian Ocean",fr:"L'océan Indien",ar:"المحيط الهندي"}],
+   e:{en:"This narrow strait is the Mediterranean's only natural ocean outlet.",fr:"Ce détroit étroit est le seul débouché océanique naturel de la Méditerranée.",ar:"هذا المضيق الضيّق هو المنفذ المحيطي الطبيعي الوحيد للبحر المتوسط."}},
+  {q:{en:"Which country contains the most natural lakes?",fr:"Quel pays compte le plus de lacs naturels ?",ar:"أيُّ دولة تضمّ أكبر عددٍ من البحيرات الطبيعية؟"},
+   a:[{en:"Canada",fr:"Canada",ar:"كندا"},{en:"Russia",fr:"Russie",ar:"روسيا"},{en:"United States",fr:"États-Unis",ar:"الولايات المتحدة"},{en:"Finland",fr:"Finlande",ar:"فنلندا"}],
+   e:{en:"Canada holds an estimated 60% of the world's lakes, carved by glaciers.",fr:"Le Canada abriterait ~60 % des lacs du monde, creusés par les glaciers.",ar:"تضمّ كندا نحو ٦٠٪ من بحيرات العالم التي حفرتها الأنهار الجليدية."}},
+  {q:{en:"In which country is Lake Baikal, the world's deepest lake?",fr:"Dans quel pays se trouve le lac Baïkal, le plus profond du monde ?",ar:"في أيّ دولة تقع بحيرة بايكال، أعمق بحيرة في العالم؟"},
+   a:[{en:"Russia",fr:"Russie",ar:"روسيا"},{en:"Mongolia",fr:"Mongolie",ar:"منغوليا"},{en:"Kazakhstan",fr:"Kazakhstan",ar:"كازاخستان"},{en:"China",fr:"Chine",ar:"الصين"}],
+   e:{en:"Baikal, in Siberia, holds about a fifth of the world's fresh surface water.",fr:"Le Baïkal, en Sibérie, contient environ un cinquième de l'eau douce de surface.",ar:"تحتوي بايكال في سيبيريا نحو خُمس المياه العذبة السطحية في العالم."}},
+  {q:{en:"On which continent is the Sahara Desert?",fr:"Sur quel continent se trouve le Sahara ?",ar:"في أيّ قارّة تقع الصحراء الكبرى؟"},
+   a:[{en:"Africa",fr:"Afrique",ar:"أفريقيا"},{en:"Asia",fr:"Asie",ar:"آسيا"},{en:"Australia",fr:"Australie",ar:"أستراليا"},{en:"South America",fr:"Amérique du Sud",ar:"أمريكا الجنوبية"}],
+   e:{en:"The Sahara spans North Africa — the largest hot desert on Earth.",fr:"Le Sahara s'étend sur l'Afrique du Nord — le plus grand désert chaud.",ar:"تمتدّ الصحراء الكبرى عبر شمال أفريقيا — أكبر صحراء حارّة على الأرض."}},
+  {q:{en:"The Atacama Desert, one of the driest places on Earth, is in which country?",fr:"Le désert d'Atacama, l'un des lieux les plus secs, est dans quel pays ?",ar:"صحراء أتاكاما، من أكثر الأماكن جفافًا، تقع في أيّ دولة؟"},
+   a:[{en:"Chile",fr:"Chili",ar:"تشيلي"},{en:"Peru",fr:"Pérou",ar:"بيرو"},{en:"Argentina",fr:"Argentine",ar:"الأرجنتين"},{en:"Bolivia",fr:"Bolivie",ar:"بوليفيا"}],
+   e:{en:"The Atacama runs along northern Chile; some areas have no recorded rainfall.",fr:"L'Atacama longe le nord du Chili ; certaines zones n'ont jamais enregistré de pluie.",ar:"تمتدّ أتاكاما على طول شمال تشيلي، وبعض مناطقها لم يُسجَّل فيها مطر قطّ."}},
+  {q:{en:"Which African nation defeated an invading army at Adwa in 1896 to keep its independence?",fr:"Quelle nation africaine vainquit une armée envahisseuse à Adoua en 1896 pour garder son indépendance ?",ar:"أيُّ دولة أفريقية هزمت جيشًا غازيًا في عدوة عام ١٨٩٦ فحافظت على استقلالها؟"},
+   a:[{en:"Ethiopia",fr:"Éthiopie",ar:"إثيوبيا"},{en:"Morocco",fr:"Maroc",ar:"المغرب"},{en:"Ghana",fr:"Ghana",ar:"غانا"},{en:"Egypt",fr:"Égypte",ar:"مصر"}],
+   e:{en:"Ethiopia repelled Italy at Adwa — rare during the 'Scramble for Africa'.",fr:"L'Éthiopie repoussa l'Italie à Adoua — fait rare lors du « partage de l'Afrique ».",ar:"صدّت إثيوبيا إيطاليا في عدوة — وهو أمرٌ نادرٌ خلال «التكالب على أفريقيا»."}},
+  {q:{en:"What is the capital of Canada?",fr:"Quelle est la capitale du Canada ?",ar:"ما عاصمة كندا؟"},
+   a:[{en:"Ottawa",fr:"Ottawa",ar:"أوتاوا"},{en:"Toronto",fr:"Toronto",ar:"تورنتو"},{en:"Vancouver",fr:"Vancouver",ar:"فانكوفر"},{en:"Montreal",fr:"Montréal",ar:"مونتريال"}],
+   e:{en:"Ottawa is the capital, though Toronto is the largest city.",fr:"Ottawa est la capitale, bien que Toronto soit la plus grande ville.",ar:"أوتاوا هي العاصمة، رغم أنّ تورنتو أكبر مدينة."}},
+  {q:{en:"What is the capital of Brazil?",fr:"Quelle est la capitale du Brésil ?",ar:"ما عاصمة البرازيل؟"},
+   a:[{en:"Brasília",fr:"Brasília",ar:"برازيليا"},{en:"Rio de Janeiro",fr:"Rio de Janeiro",ar:"ريو دي جانيرو"},{en:"São Paulo",fr:"São Paulo",ar:"ساو باولو"},{en:"Salvador",fr:"Salvador",ar:"سلفادور"}],
+   e:{en:"Brasília was purpose-built and became capital in 1960.",fr:"Brasília fut construite de toutes pièces et devint capitale en 1960.",ar:"شُيّدت برازيليا خصّيصًا وأصبحت عاصمةً عام ١٩٦٠."}},
+  {q:{en:"Which is the largest ocean on Earth?",fr:"Quel est le plus grand océan de la Terre ?",ar:"ما أكبر محيطٍ على الأرض؟"},
+   a:[{en:"The Pacific",fr:"Le Pacifique",ar:"المحيط الهادئ"},{en:"The Atlantic",fr:"L'Atlantique",ar:"المحيط الأطلسي"},{en:"The Indian",fr:"L'Indien",ar:"المحيط الهندي"},{en:"The Arctic",fr:"L'Arctique",ar:"المحيط المتجمّد الشمالي"}],
+   e:{en:"The Pacific is larger than all the land on Earth combined.",fr:"Le Pacifique est plus vaste que toutes les terres émergées réunies.",ar:"المحيط الهادئ أكبر من مساحة اليابسة كلّها مجتمعةً."}},
+  {q:{en:"As of 2023, which country has the largest population?",fr:"Depuis 2023, quel pays a la plus grande population ?",ar:"منذ عام ٢٠٢٣، أيُّ دولةٍ هي الأكثر سكّانًا؟"},
+   a:[{en:"India",fr:"L'Inde",ar:"الهند"},{en:"China",fr:"La Chine",ar:"الصين"},{en:"United States",fr:"Les États-Unis",ar:"الولايات المتحدة"},{en:"Indonesia",fr:"L'Indonésie",ar:"إندونيسيا"}],
+   e:{en:"India overtook China as the most populous country in 2023.",fr:"L'Inde a dépassé la Chine comme pays le plus peuplé en 2023.",ar:"تجاوزت الهند الصين لتصبح الأكثر سكّانًا عام ٢٠٢٣."}},
+  {q:{en:"What is the highest mountain above sea level?",fr:"Quelle est la plus haute montagne au-dessus du niveau de la mer ?",ar:"ما أعلى جبلٍ فوق مستوى سطح البحر؟"},
+   a:[{en:"Mount Everest",fr:"L'Everest",ar:"جبل إيفرست"},{en:"K2",fr:"Le K2",ar:"كي ٢"},{en:"Mont Blanc",fr:"Le Mont Blanc",ar:"مون بلان"},{en:"Denali",fr:"Le Denali",ar:"دينالي"}],
+   e:{en:"Everest reaches about 8,849 m in the Himalayas.",fr:"L'Everest culmine à environ 8 849 m dans l'Himalaya.",ar:"يبلغ ارتفاع إيفرست نحو ٨٨٤٩ م في جبال الهيمالايا."}},
+  {q:{en:"What is the capital of Japan?",fr:"Quelle est la capitale du Japon ?",ar:"ما عاصمة اليابان؟"},
+   a:[{en:"Tokyo",fr:"Tokyo",ar:"طوكيو"},{en:"Kyoto",fr:"Kyoto",ar:"كيوتو"},{en:"Osaka",fr:"Osaka",ar:"أوساكا"},{en:"Nagoya",fr:"Nagoya",ar:"ناغويا"}],
+   e:{en:"Tokyo became the capital in 1868, replacing Kyoto.",fr:"Tokyo devint la capitale en 1868, remplaçant Kyoto.",ar:"أصبحت طوكيو العاصمة عام ١٨٦٨ بدلًا من كيوتو."}},
+  {q:{en:"Which is the largest continent by area?",fr:"Quel est le plus grand continent par sa superficie ?",ar:"ما أكبر قارّةٍ من حيث المساحة؟"},
+   a:[{en:"Asia",fr:"L'Asie",ar:"آسيا"},{en:"Africa",fr:"L'Afrique",ar:"أفريقيا"},{en:"North America",fr:"L'Amérique du Nord",ar:"أمريكا الشمالية"},{en:"Antarctica",fr:"L'Antarctique",ar:"القارّة القطبية الجنوبية"}],
+   e:{en:"Asia covers about 30% of all land area.",fr:"L'Asie couvre environ 30 % des terres émergées.",ar:"تغطّي آسيا نحو ٣٠٪ من مساحة اليابسة."}},
+  {q:{en:"Into which sea does the Nile empty?",fr:"Dans quelle mer le Nil se jette-t-il ?",ar:"في أيّ بحرٍ يصبّ نهر النيل؟"},
+   a:[{en:"The Mediterranean",fr:"La Méditerranée",ar:"البحر المتوسط"},{en:"The Red Sea",fr:"La mer Rouge",ar:"البحر الأحمر"},{en:"The Arabian Sea",fr:"La mer d'Arabie",ar:"بحر العرب"},{en:"The Black Sea",fr:"La mer Noire",ar:"البحر الأسود"}],
+   e:{en:"The Nile flows north through Egypt into the Mediterranean.",fr:"Le Nil coule vers le nord à travers l'Égypte jusqu'à la Méditerranée.",ar:"يجري النيل شمالًا عبر مصر ليصبّ في البحر المتوسط."}},
+  {q:{en:"The Bosphorus strait, splitting one city between two continents, is in which country?",fr:"Le détroit du Bosphore, partageant une ville entre deux continents, est dans quel pays ?",ar:"مضيق البوسفور، الذي يقسم مدينةً بين قارّتين، يقع في أيّ دولة؟"},
+   a:[{en:"Turkey",fr:"La Turquie",ar:"تركيا"},{en:"Greece",fr:"La Grèce",ar:"اليونان"},{en:"Egypt",fr:"L'Égypte",ar:"مصر"},{en:"Italy",fr:"L'Italie",ar:"إيطاليا"}],
+   e:{en:"Istanbul straddles Europe and Asia across the Bosphorus.",fr:"Istanbul s'étend sur l'Europe et l'Asie de part et d'autre du Bosphore.",ar:"تمتدّ إسطنبول على أوروبا وآسيا عبر مضيق البوسفور."}},
+  {q:{en:"What is the capital of Spain?",fr:"Quelle est la capitale de l'Espagne ?",ar:"ما عاصمة إسبانيا؟"},
+   a:[{en:"Madrid",fr:"Madrid",ar:"مدريد"},{en:"Barcelona",fr:"Barcelone",ar:"برشلونة"},{en:"Seville",fr:"Séville",ar:"إشبيلية"},{en:"Valencia",fr:"Valence",ar:"بلنسية"}],
+   e:{en:"Madrid sits almost exactly at the centre of the country.",fr:"Madrid se trouve presque exactement au centre du pays.",ar:"تقع مدريد في وسط البلاد تقريبًا."}},
+  {q:{en:"Most of the Amazon rainforest lies within which country?",fr:"La majeure partie de la forêt amazonienne se trouve dans quel pays ?",ar:"يقع معظم غابة الأمازون المطيرة ضمن أيّ دولة؟"},
+   a:[{en:"Brazil",fr:"Le Brésil",ar:"البرازيل"},{en:"Peru",fr:"Le Pérou",ar:"بيرو"},{en:"Colombia",fr:"La Colombie",ar:"كولومبيا"},{en:"Venezuela",fr:"Le Venezuela",ar:"فنزويلا"}],
+   e:{en:"About 60% of the Amazon basin is in Brazil.",fr:"Environ 60 % du bassin amazonien se trouve au Brésil.",ar:"نحو ٦٠٪ من حوض الأمازون يقع في البرازيل."}},
+  {q:{en:"What is the capital of South Korea?",fr:"Quelle est la capitale de la Corée du Sud ?",ar:"ما عاصمة كوريا الجنوبية؟"},
+   a:[{en:"Seoul",fr:"Séoul",ar:"سيول"},{en:"Busan",fr:"Busan",ar:"بوسان"},{en:"Incheon",fr:"Incheon",ar:"إنتشون"},{en:"Pyongyang",fr:"Pyongyang",ar:"بيونغ يانغ"}],
+   e:{en:"Seoul is the capital; Pyongyang is the capital of North Korea.",fr:"Séoul est la capitale ; Pyongyang est celle de la Corée du Nord.",ar:"سيول هي العاصمة، أمّا بيونغ يانغ فعاصمة كوريا الشمالية."}},
+  {q:{en:"Which African country has the largest population?",fr:"Quel pays africain est le plus peuplé ?",ar:"أيُّ دولةٍ أفريقيةٍ هي الأكثر سكّانًا؟"},
+   a:[{en:"Nigeria",fr:"Le Nigéria",ar:"نيجيريا"},{en:"Egypt",fr:"L'Égypte",ar:"مصر"},{en:"Ethiopia",fr:"L'Éthiopie",ar:"إثيوبيا"},{en:"South Africa",fr:"L'Afrique du Sud",ar:"جنوب أفريقيا"}],
+   e:{en:"Nigeria has over 200 million people, the most in Africa.",fr:"Le Nigéria compte plus de 200 millions d'habitants, le plus d'Afrique.",ar:"يضمّ نيجيريا أكثر من ٢٠٠ مليون نسمة، الأكثر في أفريقيا."}},
+  {q:{en:"The Great Barrier Reef lies off the coast of which country?",fr:"La Grande Barrière de corail borde les côtes de quel pays ?",ar:"يقع الحاجز المرجاني العظيم قبالة سواحل أيّ دولة؟"},
+   a:[{en:"Australia",fr:"L'Australie",ar:"أستراليا"},{en:"Indonesia",fr:"L'Indonésie",ar:"إندونيسيا"},{en:"Philippines",fr:"Les Philippines",ar:"الفلبين"},{en:"Mexico",fr:"Le Mexique",ar:"المكسيك"}],
+   e:{en:"It stretches over 2,300 km along Australia's northeast coast.",fr:"Elle s'étend sur plus de 2 300 km le long du nord-est australien.",ar:"يمتدّ أكثر من ٢٣٠٠ كم على طول الساحل الشمالي الشرقي لأستراليا."}},
+  {q:{en:"What is the capital of Russia?",fr:"Quelle est la capitale de la Russie ?",ar:"ما عاصمة روسيا؟"},
+   a:[{en:"Moscow",fr:"Moscou",ar:"موسكو"},{en:"Saint Petersburg",fr:"Saint-Pétersbourg",ar:"سانت بطرسبرغ"},{en:"Kyiv",fr:"Kiev",ar:"كييف"},{en:"Novosibirsk",fr:"Novossibirsk",ar:"نوفوسيبيرسك"}],
+   e:{en:"Moscow has been the capital since 1918 (and earlier under the tsars).",fr:"Moscou est la capitale depuis 1918 (et auparavant sous les tsars).",ar:"موسكو عاصمةٌ منذ ١٩١٨ (وقبل ذلك في عهد القياصرة)."}},
+  {q:{en:"Which body of water has shores that are the lowest dry land on Earth?",fr:"Quelle étendue d'eau possède des rives formant le point terrestre le plus bas de la planète ?",ar:"أيُّ مسطّحٍ مائيٍّ تُشكّل شواطئه أخفض يابسةٍ على وجه الأرض؟"},
+   a:[{en:"The Dead Sea",fr:"La mer Morte",ar:"البحر الميت"},{en:"The Caspian Sea",fr:"La mer Caspienne",ar:"بحر قزوين"},{en:"The Red Sea",fr:"La mer Rouge",ar:"البحر الأحمر"},{en:"Lake Assal",fr:"Le lac Assal",ar:"بحيرة عسل"}],
+   e:{en:"The Dead Sea shore is the lowest dry land on Earth, about 430 m below sea level.",fr:"Les rives de la mer Morte forment le point terrestre le plus bas, à ~430 m sous le niveau de la mer.",ar:"شاطئ البحر الميت أخفض يابسةٍ على الأرض، نحو ٤٣٠ م تحت سطح البحر."}},
+  {q:{en:"Which European city is built on more than 100 small islands in a lagoon?",fr:"Quelle ville européenne est bâtie sur plus de 100 petites îles dans une lagune ?",ar:"أيُّ مدينةٍ أوروبيةٍ بُنيت على أكثر من ١٠٠ جزيرةٍ صغيرةٍ في بحيرةٍ شاطئية؟"},
+   a:[{en:"Venice",fr:"Venise",ar:"البندقية"},{en:"Amsterdam",fr:"Amsterdam",ar:"أمستردام"},{en:"Stockholm",fr:"Stockholm",ar:"ستوكهولم"},{en:"Bruges",fr:"Bruges",ar:"بروج"}],
+   e:{en:"Venice spreads across some 118 islands linked by canals and bridges.",fr:"Venise s'étend sur quelque 118 îles reliées par canaux et ponts.",ar:"تمتدّ البندقية على نحو ١١٨ جزيرةً تربطها القنوات والجسور."}},
+  {q:{en:"Mount Fuji is the highest peak of which country?",fr:"Le mont Fuji est le plus haut sommet de quel pays ?",ar:"جبل فوجي أعلى قمّةٍ في أيّ دولة؟"},
+   a:[{en:"Japan",fr:"Le Japon",ar:"اليابان"},{en:"China",fr:"La Chine",ar:"الصين"},{en:"South Korea",fr:"La Corée du Sud",ar:"كوريا الجنوبية"},{en:"Nepal",fr:"Le Népal",ar:"نيبال"}],
+   e:{en:"Fuji (3,776 m) is an active volcano southwest of Tokyo.",fr:"Le Fuji (3 776 m) est un volcan actif au sud-ouest de Tokyo.",ar:"فوجي (٣٧٧٦ م) بركانٌ نشطٌ جنوب غرب طوكيو."}}
+ ],
+ hist:[
+  {q:{en:"In what year did World War II end?",fr:"En quelle année s'est terminée la Seconde Guerre mondiale ?",ar:"في أيّ عامٍ انتهت الحرب العالمية الثانية؟"},
+   a:[{en:"1945",fr:"1945",ar:"١٩٤٥"},{en:"1944",fr:"1944",ar:"١٩٤٤"},{en:"1946",fr:"1946",ar:"١٩٤٦"},{en:"1939",fr:"1939",ar:"١٩٣٩"}],
+   e:{en:"Germany surrendered in May 1945; Japan in September 1945.",fr:"L'Allemagne capitula en mai 1945 ; le Japon en septembre 1945.",ar:"استسلمت ألمانيا في مايو ١٩٤٥، واليابان في سبتمبر ١٩٤٥."}},
+  {q:{en:"Who is regarded as the first Roman emperor?",fr:"Qui est considéré comme le premier empereur romain ?",ar:"مَن يُعدّ أوّل إمبراطورٍ روماني؟"},
+   a:[{en:"Augustus",fr:"Auguste",ar:"أغسطس"},{en:"Julius Caesar",fr:"Jules César",ar:"يوليوس قيصر"},{en:"Nero",fr:"Néron",ar:"نيرون"},{en:"Constantine",fr:"Constantin",ar:"قسطنطين"}],
+   e:{en:"Octavian took the title Augustus in 27 BC. Caesar was never emperor.",fr:"Octave prit le titre d'Auguste en 27 av. J.-C. César ne fut jamais empereur.",ar:"اتّخذ أوكتافيان لقب أغسطس عام ٢٧ ق.م، أمّا قيصر فلم يكن إمبراطورًا قطّ."}},
+  {q:{en:"In which year was the Magna Carta sealed?",fr:"En quelle année la Magna Carta fut-elle scellée ?",ar:"في أيّ عامٍ خُتمت الماغنا كارتا (الميثاق الأعظم)؟"},
+   a:[{en:"1215",fr:"1215",ar:"١٢١٥"},{en:"1066",fr:"1066",ar:"١٠٦٦"},{en:"1492",fr:"1492",ar:"١٤٩٢"},{en:"1348",fr:"1348",ar:"١٣٤٨"}],
+   e:{en:"In 1215 English barons forced King John to accept that even a king is under the law.",fr:"En 1215, les barons anglais contraignirent le roi Jean : même un roi est soumis à la loi.",ar:"عام ١٢١٥ أجبر البارونات الإنجليز الملك جون على الإقرار بأنّ الملك نفسه خاضعٌ للقانون."}},
+  {q:{en:"The storming of the Bastille in 1789 began which revolution?",fr:"La prise de la Bastille en 1789 marqua le début de quelle révolution ?",ar:"اقتحام سجن الباستيل عام ١٧٨٩ كان بداية أيّ ثورة؟"},
+   a:[{en:"The French Revolution",fr:"La Révolution française",ar:"الثورة الفرنسية"},{en:"The American Revolution",fr:"La Révolution américaine",ar:"الثورة الأمريكية"},{en:"The Russian Revolution",fr:"La Révolution russe",ar:"الثورة الروسية"},{en:"The Haitian Revolution",fr:"La Révolution haïtienne",ar:"الثورة الهايتية"}],
+   e:{en:"14 July 1789 became the symbolic start of the French Revolution.",fr:"Le 14 juillet 1789 devint le début symbolique de la Révolution française.",ar:"غدا الرابع عشر من يوليو ١٧٨٩ البداية الرمزية للثورة الفرنسية."}},
+  {q:{en:"Genghis Khan founded and ruled which empire?",fr:"Gengis Khan fonda et dirigea quel empire ?",ar:"أيّ إمبراطورية أسّسها وحكمها جنكيز خان؟"},
+   a:[{en:"The Mongol Empire",fr:"L'Empire mongol",ar:"الإمبراطورية المغولية"},{en:"The Ottoman Empire",fr:"L'Empire ottoman",ar:"الدولة العثمانية"},{en:"The Persian Empire",fr:"L'Empire perse",ar:"الإمبراطورية الفارسية"},{en:"The Han Empire",fr:"L'Empire Han",ar:"إمبراطورية هان"}],
+   e:{en:"From ~1206 the Mongol Empire became the largest contiguous land empire ever.",fr:"Dès ~1206, l'Empire mongol devint le plus grand empire terrestre d'un seul tenant.",ar:"منذ نحو ١٢٠٦ صارت الإمبراطورية المغولية أكبر إمبراطورية برّية متّصلة في التاريخ."}},
+  {q:{en:"In which country did the Renaissance begin?",fr:"Dans quel pays la Renaissance a-t-elle commencé ?",ar:"في أيّ دولة بدأ عصر النهضة؟"},
+   a:[{en:"Italy",fr:"Italie",ar:"إيطاليا"},{en:"France",fr:"France",ar:"فرنسا"},{en:"England",fr:"Angleterre",ar:"إنجلترا"},{en:"Germany",fr:"Allemagne",ar:"ألمانيا"}],
+   e:{en:"It emerged in 14th-century Italy, especially Florence under patrons like the Medici.",fr:"Elle naquit dans l'Italie du XIVe siècle, surtout à Florence, sous des mécènes comme les Médicis.",ar:"نشأ في إيطاليا في القرن الرابع عشر، خاصّةً فلورنسا برعاية أُسرٍ مثل آل ميديتشي."}},
+  {q:{en:"In what year did the Berlin Wall fall?",fr:"En quelle année le mur de Berlin est-il tombé ?",ar:"في أيّ عامٍ سقط جدار برلين؟"},
+   a:[{en:"1989",fr:"1989",ar:"١٩٨٩"},{en:"1991",fr:"1991",ar:"١٩٩١"},{en:"1985",fr:"1985",ar:"١٩٨٥"},{en:"1979",fr:"1979",ar:"١٩٧٩"}],
+   e:{en:"On 9 November 1989 the border opened — a turning point near the Cold War's end.",fr:"Le 9 novembre 1989, la frontière s'ouvrit — un tournant vers la fin de la guerre froide.",ar:"في التاسع من نوفمبر ١٩٨٩ فُتحت الحدود — منعطفٌ قرب نهاية الحرب الباردة."}},
+  {q:{en:"Who developed the movable-type printing press in 15th-century Europe?",fr:"Qui a mis au point la presse à caractères mobiles dans l'Europe du XVe siècle ?",ar:"مَن طوّر مطبعة الحروف المتحرّكة في أوروبا في القرن الخامس عشر؟"},
+   a:[{en:"Johannes Gutenberg",fr:"Johannes Gutenberg",ar:"يوهانس غوتنبرغ"},{en:"Leonardo da Vinci",fr:"Léonard de Vinci",ar:"ليوناردو دافنشي"},{en:"Martin Luther",fr:"Martin Luther",ar:"مارتن لوثر"},{en:"William Caxton",fr:"William Caxton",ar:"ويليام كاكستون"}],
+   e:{en:"Gutenberg's press (c. 1440) made books cheaper and accelerated the Reformation.",fr:"La presse de Gutenberg (v. 1440) rendit les livres meilleur marché et accéléra la Réforme.",ar:"جعلت مطبعة غوتنبرغ (نحو ١٤٤٠) الكتب أرخص وعجّلت بالإصلاح الديني."}},
+  {q:{en:"In which year did the Ottomans capture Constantinople?",fr:"En quelle année les Ottomans prirent-ils Constantinople ?",ar:"في أيّ عامٍ فتح العثمانيون القسطنطينية؟"},
+   a:[{en:"1453",fr:"1453",ar:"١٤٥٣"},{en:"1492",fr:"1492",ar:"١٤٩٢"},{en:"1066",fr:"1066",ar:"١٠٦٦"},{en:"1521",fr:"1521",ar:"١٥٢١"}],
+   e:{en:"Mehmed II took the city in 1453, often marking the end of the Middle Ages.",fr:"Mehmed II prit la ville en 1453, marquant souvent la fin du Moyen Âge.",ar:"فتح محمد الثاني المدينة عام ١٤٥٣، ويُعدّ ذلك غالبًا نهاية العصور الوسطى."}},
+  {q:{en:"Which Egyptian ruler was allied with both Julius Caesar and Mark Antony?",fr:"Quelle souveraine d'Égypte fut alliée à Jules César puis à Marc Antoine ?",ar:"أيُّ حاكمةٍ مصريةٍ تحالفت مع يوليوس قيصر ومارك أنطونيوس؟"},
+   a:[{en:"Cleopatra",fr:"Cléopâtre",ar:"كليوباترا"},{en:"Nefertiti",fr:"Néfertiti",ar:"نفرتيتي"},{en:"Hatshepsut",fr:"Hatchepsout",ar:"حتشبسوت"},{en:"Helen",fr:"Hélène",ar:"هيلين"}],
+   e:{en:"Cleopatra VII was the last active ruler of Ptolemaic Egypt; her death in 30 BC ended the dynasty.",fr:"Cléopâtre VII fut la dernière souveraine de l'Égypte ptolémaïque ; sa mort en 30 av. J.-C. clôt la dynastie.",ar:"كانت كليوباترا السابعة آخر حاكمةٍ فعليةٍ لمصر البطلمية، وبموتها عام ٣٠ ق.م انتهت الأسرة."}},
+  {q:{en:"Who proposed the theory of evolution by natural selection?",fr:"Qui a proposé la théorie de l'évolution par sélection naturelle ?",ar:"مَن طرح نظرية التطوّر بالانتقاء الطبيعي؟"},
+   a:[{en:"Charles Darwin",fr:"Charles Darwin",ar:"تشارلز داروين"},{en:"Gregor Mendel",fr:"Gregor Mendel",ar:"غريغور مندل"},{en:"Louis Pasteur",fr:"Louis Pasteur",ar:"لويس باستور"},{en:"Carl Linnaeus",fr:"Carl von Linné",ar:"كارل لينيوس"}],
+   e:{en:"Darwin set out the idea in 'On the Origin of Species' (1859).",fr:"Darwin l'exposa dans « L'Origine des espèces » (1859).",ar:"عرض داروين الفكرة في كتاب «أصل الأنواع» (١٨٥٩)."}},
+  {q:{en:"Who was the first person to walk on the Moon?",fr:"Qui fut le premier homme à marcher sur la Lune ?",ar:"مَن أوّل إنسانٍ مشى على سطح القمر؟"},
+   a:[{en:"Neil Armstrong",fr:"Neil Armstrong",ar:"نيل أرمسترونغ"},{en:"Buzz Aldrin",fr:"Buzz Aldrin",ar:"باز ألدرين"},{en:"Yuri Gagarin",fr:"Youri Gagarine",ar:"يوري غاغارين"},{en:"Michael Collins",fr:"Michael Collins",ar:"مايكل كولينز"}],
+   e:{en:"Armstrong stepped onto the Moon on 20 July 1969. Gagarin was first in space.",fr:"Armstrong posa le pied sur la Lune le 20 juillet 1969. Gagarine fut le premier dans l'espace.",ar:"وطئ أرمسترونغ القمر في ٢٠ يوليو ١٩٦٩. وكان غاغارين أوّل إنسانٍ في الفضاء."}},
+  {q:{en:"Who was the first President of the United States?",fr:"Qui fut le premier président des États-Unis ?",ar:"مَن أوّل رئيسٍ للولايات المتحدة؟"},
+   a:[{en:"George Washington",fr:"George Washington",ar:"جورج واشنطن"},{en:"Thomas Jefferson",fr:"Thomas Jefferson",ar:"توماس جيفرسون"},{en:"Abraham Lincoln",fr:"Abraham Lincoln",ar:"أبراهام لينكون"},{en:"John Adams",fr:"John Adams",ar:"جون آدامز"}],
+   e:{en:"Washington served from 1789 to 1797.",fr:"Washington exerça de 1789 à 1797.",ar:"تولّى واشنطن الرئاسة من ١٧٨٩ إلى ١٧٩٧."}},
+  {q:{en:"In which country did the Industrial Revolution begin?",fr:"Dans quel pays la révolution industrielle a-t-elle commencé ?",ar:"في أيّ دولةٍ بدأت الثورة الصناعية؟"},
+   a:[{en:"Britain",fr:"La Grande-Bretagne",ar:"بريطانيا"},{en:"France",fr:"La France",ar:"فرنسا"},{en:"Germany",fr:"L'Allemagne",ar:"ألمانيا"},{en:"United States",fr:"Les États-Unis",ar:"الولايات المتحدة"}],
+   e:{en:"It began in Britain in the late 1700s with textiles and steam power.",fr:"Elle débuta en Grande-Bretagne à la fin du XVIIIe siècle (textile, vapeur).",ar:"بدأت في بريطانيا أواخر القرن الثامن عشر بصناعة النسيج وقوّة البخار."}},
+  {q:{en:"In what year did World War I begin?",fr:"En quelle année commença la Première Guerre mondiale ?",ar:"في أيّ عامٍ بدأت الحرب العالمية الأولى؟"},
+   a:[{en:"1914",fr:"1914",ar:"١٩١٤"},{en:"1918",fr:"1918",ar:"١٩١٨"},{en:"1912",fr:"1912",ar:"١٩١٢"},{en:"1939",fr:"1939",ar:"١٩٣٩"}],
+   e:{en:"It began in 1914 and ended in 1918.",fr:"Elle commença en 1914 et s'acheva en 1918.",ar:"بدأت عام ١٩١٤ وانتهت عام ١٩١٨."}},
+  {q:{en:"Who painted the Mona Lisa?",fr:"Qui a peint la Joconde ?",ar:"مَن رسم لوحة الموناليزا؟"},
+   a:[{en:"Leonardo da Vinci",fr:"Léonard de Vinci",ar:"ليوناردو دافنشي"},{en:"Michelangelo",fr:"Michel-Ange",ar:"مايكل أنجلو"},{en:"Raphael",fr:"Raphaël",ar:"رافائيل"},{en:"Caravaggio",fr:"Le Caravage",ar:"كارافاجو"}],
+   e:{en:"Leonardo painted it in the early 1500s; it hangs in the Louvre.",fr:"Léonard la peignit au début du XVIe siècle ; elle est au Louvre.",ar:"رسمها ليوناردو في مطلع القرن السادس عشر، وهي معروضةٌ في متحف اللوفر."}},
+  {q:{en:"The famous ancient Library stood in which city?",fr:"La célèbre bibliothèque antique se trouvait dans quelle ville ?",ar:"المكتبة القديمة الشهيرة كانت في أيّ مدينة؟"},
+   a:[{en:"Alexandria",fr:"Alexandrie",ar:"الإسكندرية"},{en:"Athens",fr:"Athènes",ar:"أثينا"},{en:"Rome",fr:"Rome",ar:"روما"},{en:"Babylon",fr:"Babylone",ar:"بابل"}],
+   e:{en:"The Library of Alexandria in Egypt was antiquity's greatest collection of scrolls.",fr:"La bibliothèque d'Alexandrie, en Égypte, fut la plus grande collection de rouleaux de l'Antiquité.",ar:"كانت مكتبة الإسكندرية في مصر أعظم مجموعةٍ من المخطوطات في العصور القديمة."}},
+  {q:{en:"Which civilization built the mountain city of Machu Picchu?",fr:"Quelle civilisation a bâti la cité de montagne du Machu Picchu ?",ar:"أيُّ حضارةٍ بنت مدينة ماتشو بيتشو الجبلية؟"},
+   a:[{en:"The Inca",fr:"Les Incas",ar:"الإنكا"},{en:"The Aztecs",fr:"Les Aztèques",ar:"الأزتيك"},{en:"The Maya",fr:"Les Mayas",ar:"المايا"},{en:"The Olmec",fr:"Les Olmèques",ar:"الأولمك"}],
+   e:{en:"The Inca built Machu Picchu in the Peruvian Andes around 1450.",fr:"Les Incas bâtirent le Machu Picchu dans les Andes péruviennes vers 1450.",ar:"بنى الإنكا ماتشو بيتشو في جبال الأنديز البيروفية نحو عام ١٤٥٠."}},
+  {q:{en:"Apartheid was a system of racial segregation in which country?",fr:"L'apartheid était un système de ségrégation raciale dans quel pays ?",ar:"كان الفصل العنصري (الأبارتهايد) نظامًا في أيّ دولة؟"},
+   a:[{en:"South Africa",fr:"L'Afrique du Sud",ar:"جنوب أفريقيا"},{en:"Australia",fr:"L'Australie",ar:"أستراليا"},{en:"Brazil",fr:"Le Brésil",ar:"البرازيل"},{en:"India",fr:"L'Inde",ar:"الهند"}],
+   e:{en:"It was enforced in South Africa from 1948 until the early 1990s.",fr:"Il fut imposé en Afrique du Sud de 1948 jusqu'au début des années 1990.",ar:"فُرض في جنوب أفريقيا من ١٩٤٨ حتى أوائل التسعينيات."}},
+  {q:{en:"Who led India's nonviolent movement for independence?",fr:"Qui mena le mouvement non violent pour l'indépendance de l'Inde ?",ar:"مَن قاد حركة الاستقلال اللاعنفية في الهند؟"},
+   a:[{en:"Mahatma Gandhi",fr:"Mahatma Gandhi",ar:"المهاتما غاندي"},{en:"Jawaharlal Nehru",fr:"Jawaharlal Nehru",ar:"جواهر لال نهرو"},{en:"Nelson Mandela",fr:"Nelson Mandela",ar:"نيلسون مانديلا"},{en:"Sukarno",fr:"Soekarno",ar:"سوكارنو"}],
+   e:{en:"Gandhi's strategy of nonviolent resistance helped win independence in 1947.",fr:"La résistance non violente de Gandhi contribua à l'indépendance en 1947.",ar:"ساعدت مقاومة غاندي اللاعنفية على نيل الاستقلال عام ١٩٤٧."}},
+  {q:{en:"The Black Death of the 14th century was an outbreak of which disease?",fr:"La peste noire du XIVe siècle fut une épidémie de quelle maladie ?",ar:"الموت الأسود في القرن الرابع عشر كان تفشّيًا لأيّ مرض؟"},
+   a:[{en:"Plague",fr:"La peste",ar:"الطاعون"},{en:"Smallpox",fr:"La variole",ar:"الجدري"},{en:"Cholera",fr:"Le choléra",ar:"الكوليرا"},{en:"Typhus",fr:"Le typhus",ar:"التيفوس"}],
+   e:{en:"Bubonic plague killed perhaps a third of Europe's people around 1347–1351.",fr:"La peste bubonique emporta peut-être un tiers des Européens vers 1347–1351.",ar:"قضى الطاعون الدبلي على نحو ثلث سكّان أوروبا قرابة ١٣٤٧–١٣٥١."}},
+  {q:{en:"In which year was the American Declaration of Independence adopted?",fr:"En quelle année la Déclaration d'indépendance américaine fut-elle adoptée ?",ar:"في أيّ عامٍ أُقرّ إعلان الاستقلال الأمريكي؟"},
+   a:[{en:"1776",fr:"1776",ar:"١٧٧٦"},{en:"1789",fr:"1789",ar:"١٧٨٩"},{en:"1492",fr:"1492",ar:"١٤٩٢"},{en:"1812",fr:"1812",ar:"١٨١٢"}],
+   e:{en:"The Continental Congress adopted it on 4 July 1776.",fr:"Le Congrès continental l'adopta le 4 juillet 1776.",ar:"أقرّه الكونغرس القارّي في الرابع من يوليو ١٧٧٦."}},
+  {q:{en:"The Great Pyramid and the Sphinx were built by which civilization?",fr:"La grande pyramide et le Sphinx furent bâtis par quelle civilisation ?",ar:"الهرم الأكبر وأبو الهول بناهما أيُّ حضارة؟"},
+   a:[{en:"Ancient Egypt",fr:"L'Égypte antique",ar:"مصر القديمة"},{en:"Ancient Greece",fr:"La Grèce antique",ar:"اليونان القديمة"},{en:"Sumer",fr:"Sumer",ar:"سومر"},{en:"Persia",fr:"La Perse",ar:"بلاد فارس"}],
+   e:{en:"They rose on the Giza plateau during Egypt's Old Kingdom (~2500 BC).",fr:"Ils s'élevèrent sur le plateau de Gizeh sous l'Ancien Empire égyptien (~2500 av. J.-C.).",ar:"شُيّدت على هضبة الجيزة في عهد الدولة المصرية القديمة (نحو ٢٥٠٠ ق.م)."}},
+  {q:{en:"Who was the British Prime Minister during most of World War II?",fr:"Qui était Premier ministre britannique pendant l'essentiel de la Seconde Guerre mondiale ?",ar:"مَن كان رئيس وزراء بريطانيا خلال معظم الحرب العالمية الثانية؟"},
+   a:[{en:"Winston Churchill",fr:"Winston Churchill",ar:"ونستون تشرشل"},{en:"Neville Chamberlain",fr:"Neville Chamberlain",ar:"نيفيل تشامبرلين"},{en:"Clement Attlee",fr:"Clement Attlee",ar:"كليمنت أتلي"},{en:"Anthony Eden",fr:"Anthony Eden",ar:"أنتوني إيدن"}],
+   e:{en:"Churchill led Britain from 1940; Chamberlain preceded him.",fr:"Churchill dirigea le Royaume-Uni à partir de 1940 ; Chamberlain l'avait précédé.",ar:"قاد تشرشل بريطانيا منذ ١٩٤٠، وسبقه تشامبرلين."}},
+  {q:{en:"The Bolshevik revolution that created Soviet Russia took place in which year?",fr:"La révolution bolchevique qui donna naissance à la Russie soviétique eut lieu en quelle année ?",ar:"الثورة البلشفية التي أنشأت روسيا السوفيتية وقعت في أيّ عام؟"},
+   a:[{en:"1917",fr:"1917",ar:"١٩١٧"},{en:"1905",fr:"1905",ar:"١٩٠٥"},{en:"1922",fr:"1922",ar:"١٩٢٢"},{en:"1789",fr:"1789",ar:"١٧٨٩"}],
+   e:{en:"The October Revolution of 1917 brought the Bolsheviks to power.",fr:"La révolution d'Octobre 1917 porta les bolcheviks au pouvoir.",ar:"أوصلت ثورة أكتوبر ١٩١٧ البلاشفة إلى السلطة."}},
+  {q:{en:"Which explorer's expedition first sailed all the way around the world?",fr:"L'expédition de quel explorateur fit le premier tour du monde par mer ?",ar:"بعثة أيّ مستكشفٍ أبحرت أوّل مرّةٍ حول العالم بأكمله؟"},
+   a:[{en:"Magellan",fr:"Magellan",ar:"ماجلان"},{en:"Vasco da Gama",fr:"Vasco de Gama",ar:"فاسكو دا غاما"},{en:"Marco Polo",fr:"Marco Polo",ar:"ماركو بولو"},{en:"Francis Drake",fr:"Francis Drake",ar:"فرانسيس دريك"}],
+   e:{en:"Magellan's expedition (1519–1522) completed the first circumnavigation, though he died en route.",fr:"L'expédition de Magellan (1519–1522) réalisa le premier tour du monde, bien qu'il mourût en chemin.",ar:"أتمّت بعثة ماجلان (١٥١٩–١٥٢٢) أوّل دورانٍ حول الأرض، وإن مات هو في الطريق."}},
+  {q:{en:"The Cold War was chiefly a rivalry between the United States and which country?",fr:"La guerre froide opposa surtout les États-Unis à quel pays ?",ar:"كانت الحرب الباردة أساسًا تنافسًا بين الولايات المتحدة وأيّ دولة؟"},
+   a:[{en:"The Soviet Union",fr:"L'Union soviétique",ar:"الاتحاد السوفيتي"},{en:"China",fr:"La Chine",ar:"الصين"},{en:"Germany",fr:"L'Allemagne",ar:"ألمانيا"},{en:"Japan",fr:"Le Japon",ar:"اليابان"}],
+   e:{en:"The US and USSR vied for influence from 1947 until the USSR dissolved in 1991.",fr:"Les États-Unis et l'URSS rivalisèrent de 1947 jusqu'à la dissolution de l'URSS en 1991.",ar:"تنافست الولايات المتحدة والاتحاد السوفيتي من ١٩٤٧ حتى انحلال الاتحاد عام ١٩٩١."}}
+ ]
+};
+
+var PER=10, app=document.getElementById('app'), st=null;
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x;}return a;}
+
+function home(){
+  st=null;
+  var subj=[
+    {m:'math',c:'math',ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 6h16M4 6l6 6-6 6h16"/></svg>',name:G.math,d:G.dmath},
+    {m:'geo',c:'geo',ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.5 6.5c3 2 10 2 13 0M5.5 17.5c3-2 10-2 13 0" stroke-width="1"/></svg>',name:G.geo,d:G.dgeo},
+    {m:'hist',c:'hist',ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 21h16M6 21V9l6-5 6 5v12M9.5 21v-5h5v5"/></svg>',name:G.hist,d:G.dhist},
+    {m:'mix',c:'mix',ic:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/><circle cx="12" cy="12" r="4"/></svg>',name:G.grand,d:G.dgrand}
+  ];
+  app.innerHTML='<div class="view"><div class="eyebrow">'+tr(G.expedition)+'</div>'+
+    '<div class="gtitle">'+t("g_trivia")+'</div>'+
+    '<div class="rule"><span class="ln"></span><span class="dot">✦</span><span class="ln"></span></div>'+
+    '<p class="tagline">'+tr(G.intro)+'</p>'+
+    '<div class="eyebrow" style="margin-bottom:14px">'+tr(G.pick)+'</div>'+
+    '<div class="cards">'+subj.map(function(s){return '<button class="card '+s.c+'" data-m="'+s.m+'">'+s.ic+'<div><h3>'+tr(s.name)+'</h3><p style="font-style:italic;color:var(--ink-soft);font-size:.9rem;margin-top:2px">'+tr(s.d)+'</p></div></button>';}).join('')+'</div>'+
+    '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelectorAll('.card').forEach(function(c){c.onclick=function(){startRound(c.dataset.m);};});
+}
+function startRound(mode){
+  var pool=[];
+  if(mode==='mix'){['math','geo','hist'].forEach(function(k){BANK[k].forEach(function(q){pool.push(q);});});}
+  else BANK[mode].forEach(function(q){pool.push(q);});
+  var chosen=shuffle(pool).slice(0,Math.min(PER,pool.length)).map(function(q){
+    var correct=q.a[0];
+    return {q:q.q,e:q.e,opts:shuffle(q.a),correct:correct};
+  });
+  st={qs:chosen,idx:0,score:0,streak:0,answered:false,mode:mode};
+  renderQ();
+}
+function renderQ(){
+  var s=st,item=s.qs[s.idx],n=s.idx+1,total=s.qs.length;
+  app.innerHTML='<div class="view"><div class="qhead"><span class="qmeta">'+tr(G.question)+' '+n+' / '+total+'</span>'+
+    '<span class="scoreline"><span>'+t("score")+' <b>'+s.score+'</b></span><span class="st">'+t("streak")+' <b>'+s.streak+'</b></span></span></div>'+
+    '<div class="bar"><i style="width:'+((n-1)/total*100)+'%"></i></div>'+
+    '<div class="qtext">'+tr(item.q)+'</div><div class="opts" id="opts"></div>'+
+    '<div class="feedback" id="fb"><div class="verdict" id="vd"></div><div class="explain" id="ex"></div>'+
+    '<div class="nextrow"><button class="btn" id="next">'+(n<total?t("next"):t("seeResults"))+'</button></div></div>'+
+    '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  var wrap=app.querySelector('#opts'),keys=['A','B','C','D'];
+  item.opts.forEach(function(o,i){var b=document.createElement('button');b.className='opt';
+    b.innerHTML='<span class="key">'+keys[i]+'</span><span>'+tr(o)+'</span>';b.onclick=function(){choose(o,b);};wrap.appendChild(b);});
+  app.querySelector('#next').onclick=advance;
+}
+function choose(o,btn){
+  if(st.answered)return;st.answered=true;
+  var item=st.qs[st.idx],correct=(o===item.correct);
+  app.querySelectorAll('.opt').forEach(function(b){b.classList.add('locked');
+    var span=b.querySelector('span:last-child').textContent;
+    if(span===tr(item.correct))b.classList.add('correct');else if(b===btn)b.classList.add('wrong');else b.classList.add('dim');});
+  if(correct){st.score++;st.streak++;}else st.streak=0;
+  var vd=app.querySelector('#vd');vd.textContent=correct?t("correct"):t("notQuite");vd.className='verdict '+(correct?'good':'bad');
+  app.querySelector('#ex').textContent=tr(item.e);
+  app.querySelector('#fb').classList.add('show');
+  app.querySelector('.scoreline').innerHTML='<span>'+t("score")+' <b>'+st.score+'</b></span><span class="st">'+t("streak")+' <b>'+st.streak+'</b></span>';
+}
+function advance(){if(st.idx<st.qs.length-1){st.idx++;st.answered=false;renderQ();}else results();}
+function results(){
+  var total=st.qs.length,pct=st.score/total,r=G.ranks.find(function(x){return pct>=x.min;});
+  var isBest=Curiosa.saveScore('trivia',st.score);
+  app.innerHTML='<div class="view"><div class="res-title">'+tr({en:"Expedition Complete",fr:"Expédition terminée",ar:"اكتملت الرحلة"})+'</div>'+
+    (isBest?'<div class="newbest">'+t("newBest")+'</div>':'')+
+    '<div class="rank">'+tr(r.t)+'</div><div class="scorebig">'+st.score+'<small> / '+total+'</small></div>'+
+    '<p class="res-sub">'+tr(r.d)+'</p>'+
+    '<div class="res-actions"><button class="btn" id="again">'+t("playAgain")+'</button><button class="btn ghost" id="menu">'+tr({en:"Change Field",fr:"Changer de domaine",ar:"غيّر المجال"})+'</button></div>'+
+    '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelector('#again').onclick=function(){startRound(st.mode);};
+  app.querySelector('#menu').onclick=home;
+}
+home();
+</script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Timeline Challenge — Curiosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/shared.css">
+<style>
+  .stage{max-width:600px}
+  .phead{display:flex;justify-content:space-between;align-items:center;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.12em;margin-bottom:6px}
+  .phead b{color:var(--oxblood)}.phead .b b{color:var(--verdigris)}
+  .theme{text-align:center;font-family:'Cinzel',serif;font-size:1.05rem;letter-spacing:.05em;color:var(--oxblood);margin:4px 0 4px}
+  html[lang="ar"] .theme{font-family:'Amiri',serif;letter-spacing:0;font-size:1.25rem}
+  .hint{text-align:center;font-style:italic;color:var(--ink-soft);font-size:.95rem;margin-bottom:16px}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .ev{display:flex;align-items:center;gap:12px;background:rgba(255,250,238,.6);border:1px solid var(--line);border-radius:3px;padding:13px 14px}
+  .ev .lbl{flex:1;font-size:1.05rem;line-height:1.35}
+  .ev .yr{font-family:'Cinzel',serif;color:var(--verdigris);font-size:1rem;white-space:nowrap}
+  .ev.ok{background:rgba(53,107,94,.14);border-color:var(--verdigris)}
+  .ev.no{background:rgba(156,61,40,.12);border-color:var(--oxblood)}
+  .ev.no .yr{color:var(--oxblood)}
+  .arrows{display:flex;flex-direction:column;gap:4px}
+  .arrows button{cursor:pointer;width:30px;height:24px;border:1px solid var(--line);background:rgba(255,250,238,.7);border-radius:3px;color:var(--ink-soft);font-size:.7rem;line-height:1}
+  .arrows button:hover{background:var(--ink);color:var(--parch1)}
+  .arrows button:disabled{opacity:.25;cursor:default}
+  .note{font-style:italic;color:var(--ink-soft);font-size:.9rem;margin-top:6px;padding-inline-start:6px}
+  .actions{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+  .res-title{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft);text-align:center;margin-bottom:8px}
+  .rank{font-family:'Cinzel',serif;font-weight:700;text-align:center;font-size:clamp(1.6rem,5vw,2.3rem);color:var(--oxblood)}
+  html[lang="ar"] .rank,html[lang="ar"] .res-title{font-family:'Amiri',serif;letter-spacing:0}
+  .scorebig{text-align:center;margin:18px 0 4px;font-size:3rem;font-family:'Cinzel',serif}.scorebig small{font-size:1.1rem;color:var(--ink-soft)}
+  .res-sub{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.02rem;max-width:400px;margin:6px auto 22px;line-height:1.5}
+  .res-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .newbest{text-align:center;color:var(--verdigris);font-family:'Cinzel',serif;letter-spacing:.1em;font-size:.78rem;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="gamewrap"><div class="stage">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <div id="app"></div>
+</div></div>
+<script src="../assets/strings.js"></script>
+<script>window.CURIOSA_ROOT="../";</script>
+<script src="../assets/core.js"></script>
+<script>
+var t=Curiosa.t,L=Curiosa.lang;function tr(o){return o[L()]||o.en;}
+var G={
+  sorter:{en:"The Sorter of Ages",fr:"Le Trieur des Âges",ar:"مُرتِّب العصور"},
+  intro:{en:"Five events, scrambled. Arrange them from earliest to latest, then lock in your answer.",fr:"Cinq événements, mélangés. Classez-les du plus ancien au plus récent, puis validez.",ar:"خمسة أحداثٍ مُبعثرة. رتّبها من الأقدم إلى الأحدث ثمّ ثبّت إجابتك."},
+  begin:{en:"Begin",fr:"Commencer",ar:"ابدأ"},
+  round:{en:"Round",fr:"Manche",ar:"الجولة"},
+  hint:{en:"Earliest at the top, latest at the bottom.",fr:"Le plus ancien en haut, le plus récent en bas.",ar:"الأقدم في الأعلى والأحدث في الأسفل."},
+  lockIn:{en:"Lock In Order",fr:"Valider l'ordre",ar:"ثبّت الترتيب"},
+  nextRound:{en:"Next Round →",fr:"Manche suivante →",ar:"الجولة التالية ←"},
+  finish:{en:"See Results →",fr:"Voir les résultats →",ar:"عرض النتائج ←"},
+  placed:{en:"correctly placed",fr:"bien placés",ar:"في موضعها الصحيح"},
+  complete:{en:"Challenge Complete",fr:"Défi terminé",ar:"اكتمل التحدّي"},
+  bc:{en:"BC",fr:"av. J.-C.",ar:"ق.م"},
+  ranks:[
+    {min:.9,t:{en:"Keeper of Ages",fr:"Gardien des Âges",ar:"حافظ العصور"},d:{en:"The centuries answer to you.",fr:"Les siècles vous obéissent.",ar:"القرون طوع معرفتك."}},
+    {min:.7,t:{en:"Master Chronologist",fr:"Maître Chronologiste",ar:"خبير التأريخ"},d:{en:"A fine sense of when.",fr:"Un beau sens du « quand ».",ar:"حسٌّ دقيقٌ بالزمن."}},
+    {min:.5,t:{en:"Seasoned Historian",fr:"Historien Aguerri",ar:"مؤرّخ متمرّس"},d:{en:"The eras are coming into focus.",fr:"Les époques se précisent.",ar:"بدأت العصور تتّضح."}},
+    {min:.3,t:{en:"Curious Apprentice",fr:"Apprenti Curieux",ar:"متدرّب فضولي"},d:{en:"History rewards the patient.",fr:"L'histoire récompense les patients.",ar:"التاريخ يكافئ الصابرين."}},
+    {min:0,t:{en:"Fresh Recruit",fr:"Nouvelle Recrue",ar:"مستجِدّ"},d:{en:"Every timeline starts somewhere.",fr:"Toute chronologie a un début.",ar:"كلّ تسلسلٍ زمنيٍّ له بداية."}}
+  ]
+};
+var SETS=[
+ {theme:{en:"The Ancient World",fr:"Le Monde Antique",ar:"العالم القديم"},ev:[
+   {y:-2560,l:{en:"Great Pyramid of Giza built",fr:"Construction de la grande pyramide de Gizeh",ar:"بناء هرم خوفو الأكبر بالجيزة"}},
+   {y:-753,l:{en:"Traditional founding of Rome",fr:"Fondation traditionnelle de Rome",ar:"التأسيس التقليدي لروما"}},
+   {y:-563,l:{en:"Birth of the Buddha",fr:"Naissance du Bouddha",ar:"مولد بوذا"}},
+   {y:-323,l:{en:"Death of Alexander the Great",fr:"Mort d'Alexandre le Grand",ar:"وفاة الإسكندر الأكبر"}},
+   {y:-44,l:{en:"Assassination of Julius Caesar",fr:"Assassinat de Jules César",ar:"اغتيال يوليوس قيصر"}}]},
+ {theme:{en:"Engines of Progress",fr:"Les Moteurs du Progrès",ar:"محرّكات التقدّم"},ev:[
+   {y:1440,l:{en:"Gutenberg's printing press",fr:"Presse à imprimer de Gutenberg",ar:"مطبعة غوتنبرغ"}},
+   {y:1776,l:{en:"Watt's improved steam engine",fr:"Machine à vapeur perfectionnée de Watt",ar:"محرّك واط البخاري المطوَّر"}},
+   {y:1876,l:{en:"Bell patents the telephone",fr:"Bell brevette le téléphone",ar:"بل يسجّل براءة الهاتف"}},
+   {y:1903,l:{en:"Wright brothers' first flight",fr:"Premier vol des frères Wright",ar:"أول طيران للأخوين رايت"}},
+   {y:1989,l:{en:"Invention of the World Wide Web",fr:"Invention du World Wide Web",ar:"اختراع الشبكة العنكبوتية"}}]},
+ {theme:{en:"A Turbulent Century",fr:"Un Siècle Tumultueux",ar:"قرنٌ مضطرب"},ev:[
+   {y:1912,l:{en:"Sinking of the Titanic",fr:"Naufrage du Titanic",ar:"غرق سفينة تايتانيك"}},
+   {y:1914,l:{en:"First World War begins",fr:"Début de la Première Guerre mondiale",ar:"اندلاع الحرب العالمية الأولى"}},
+   {y:1929,l:{en:"Wall Street Crash",fr:"Krach de Wall Street",ar:"انهيار وول ستريت"}},
+   {y:1969,l:{en:"Apollo 11 Moon landing",fr:"Alunissage d'Apollo 11",ar:"هبوط أبولو ١١ على القمر"}},
+   {y:1989,l:{en:"Fall of the Berlin Wall",fr:"Chute du mur de Berlin",ar:"سقوط جدار برلين"}}]},
+ {theme:{en:"Voyages of Discovery",fr:"Les Grandes Découvertes",ar:"رحلات الاستكشاف"},ev:[
+   {y:1492,l:{en:"Columbus reaches the Americas",fr:"Colomb atteint les Amériques",ar:"وصول كولومبوس إلى الأمريكتين"}},
+   {y:1522,l:{en:"First circumnavigation completed",fr:"Premier tour du monde achevé",ar:"إتمام أول دوران حول الأرض"}},
+   {y:1770,l:{en:"Cook charts Australia's east coast",fr:"Cook cartographie la côte est de l'Australie",ar:"كوك يرسم الساحل الشرقي لأستراليا"}},
+   {y:1911,l:{en:"Amundsen reaches the South Pole",fr:"Amundsen atteint le pôle Sud",ar:"أموندسن يبلغ القطب الجنوبي"}},
+   {y:1953,l:{en:"First ascent of Everest",fr:"Première ascension de l'Everest",ar:"أول صعودٍ لقمة إفرست"}}]},
+ {theme:{en:"Ideas & Science",fr:"Idées & Science",ar:"الأفكار والعلوم"},ev:[
+   {y:1543,l:{en:"Copernicus: a Sun-centred cosmos",fr:"Copernic : un cosmos héliocentrique",ar:"كوبرنيكوس: كونٌ مركزه الشمس"}},
+   {y:1687,l:{en:"Newton's Principia published",fr:"Publication des Principia de Newton",ar:"نشر كتاب نيوتن «المبادئ»"}},
+   {y:1859,l:{en:"Darwin's On the Origin of Species",fr:"L'Origine des espèces de Darwin",ar:"كتاب داروين «أصل الأنواع»"}},
+   {y:1905,l:{en:"Einstein's special relativity",fr:"Relativité restreinte d'Einstein",ar:"نظرية أينشتاين النسبية الخاصة"}},
+   {y:1953,l:{en:"Structure of DNA described",fr:"Description de la structure de l'ADN",ar:"وصف بنية الحمض النووي DNA"}}]},
+ {theme:{en:"Power & Revolution",fr:"Pouvoir & Révolution",ar:"السلطة والثورة"},ev:[
+   {y:1215,l:{en:"Magna Carta sealed",fr:"Scellement de la Magna Carta",ar:"ختم الماغنا كارتا"}},
+   {y:1453,l:{en:"Fall of Constantinople",fr:"Chute de Constantinople",ar:"سقوط القسطنطينية"}},
+   {y:1776,l:{en:"US Declaration of Independence",fr:"Déclaration d'indépendance américaine",ar:"إعلان الاستقلال الأمريكي"}},
+   {y:1789,l:{en:"French Revolution begins",fr:"Début de la Révolution française",ar:"بداية الثورة الفرنسية"}},
+   {y:1947,l:{en:"Indian independence",fr:"Indépendance de l'Inde",ar:"استقلال الهند"}}]},
+ {theme:{en:"Empires of Antiquity",fr:"Les Empires de l'Antiquité",ar:"إمبراطوريات العصور القديمة"},ev:[
+   {y:-1754,l:{en:"Code of Hammurabi written",fr:"Rédaction du Code de Hammurabi",ar:"تدوين شريعة حمورابي"}},
+   {y:-776,l:{en:"First ancient Olympic Games",fr:"Premiers Jeux olympiques antiques",ar:"أول دورة أولمبية قديمة"}},
+   {y:-550,l:{en:"Cyrus founds the Persian Empire",fr:"Cyrus fonde l'Empire perse",ar:"قورش يؤسّس الإمبراطورية الفارسية"}},
+   {y:-221,l:{en:"Qin begins unifying the Great Wall",fr:"Les Qin commencent à unifier la Grande Muraille",ar:"أسرة تشين تبدأ توحيد سور الصين العظيم"}},
+   {y:80,l:{en:"Colosseum completed in Rome",fr:"Achèvement du Colisée à Rome",ar:"اكتمال الكولوسيوم في روما"}}]},
+ {theme:{en:"The Islamic Golden Age",fr:"L'Âge d'Or Islamique",ar:"العصر الذهبي الإسلامي"},ev:[
+   {y:622,l:{en:"The Hijra to Medina",fr:"L'Hégire vers Médine",ar:"الهجرة إلى المدينة"}},
+   {y:762,l:{en:"Founding of Baghdad",fr:"Fondation de Bagdad",ar:"تأسيس مدينة بغداد"}},
+   {y:820,l:{en:"Al-Khwarizmi's work on algebra",fr:"Les travaux d'al-Khwarizmi sur l'algèbre",ar:"أعمال الخوارزمي في الجبر"}},
+   {y:1025,l:{en:"Ibn Sina's Canon of Medicine",fr:"Le Canon de la médecine d'Ibn Sina",ar:"كتاب القانون في الطب لابن سينا"}},
+   {y:1325,l:{en:"Ibn Battuta begins his travels",fr:"Ibn Battuta entame ses voyages",ar:"ابن بطّوطة يبدأ رحلاته"}}]},
+ {theme:{en:"The Space Age",fr:"L'Ère Spatiale",ar:"عصر الفضاء"},ev:[
+   {y:1957,l:{en:"Sputnik 1, first satellite",fr:"Spoutnik 1, premier satellite",ar:"سبوتنيك ١، أول قمر صناعي"}},
+   {y:1961,l:{en:"Gagarin, first human in space",fr:"Gagarine, premier humain dans l'espace",ar:"غاغارين، أول إنسان في الفضاء"}},
+   {y:1965,l:{en:"First spacewalk (Leonov)",fr:"Première sortie dans l'espace (Leonov)",ar:"أول سيرٍ في الفضاء (ليونوف)"}},
+   {y:1990,l:{en:"Hubble Space Telescope launched",fr:"Lancement du télescope spatial Hubble",ar:"إطلاق تلسكوب هابل الفضائي"}},
+   {y:2012,l:{en:"Curiosity rover lands on Mars",fr:"Le rover Curiosity se pose sur Mars",ar:"مركبة كيوريوسيتي تهبط على المرّيخ"}}]},
+ {theme:{en:"The Digital Age",fr:"L'Ère Numérique",ar:"العصر الرقمي"},ev:[
+   {y:1947,l:{en:"The transistor is invented",fr:"Invention du transistor",ar:"اختراع الترانزستور"}},
+   {y:1969,l:{en:"First message sent over ARPANET",fr:"Premier message envoyé sur ARPANET",ar:"أول رسالة عبر شبكة آربانت"}},
+   {y:1976,l:{en:"Apple is founded",fr:"Fondation d'Apple",ar:"تأسيس شركة آبل"}},
+   {y:1992,l:{en:"First text (SMS) message sent",fr:"Premier SMS envoyé",ar:"إرسال أول رسالة نصّية قصيرة"}},
+   {y:2007,l:{en:"The first iPhone is released",fr:"Sortie du premier iPhone",ar:"إطلاق أول هاتف آيفون"}}]},
+ {theme:{en:"Art & Culture",fr:"Art & Culture",ar:"الفنّ والثقافة"},ev:[
+   {y:1600,l:{en:"Shakespeare's Hamlet first staged",fr:"Première représentation de Hamlet",ar:"أول عرضٍ لمسرحية هاملت لشكسبير"}},
+   {y:1824,l:{en:"Beethoven's Ninth Symphony premieres",fr:"Création de la 9e Symphonie de Beethoven",ar:"العرض الأول لسيمفونية بيتهوفن التاسعة"}},
+   {y:1839,l:{en:"Photography unveiled (daguerreotype)",fr:"Dévoilement de la photographie (daguerréotype)",ar:"الكشف عن التصوير الضوئي (الدّاغيروتايب)"}},
+   {y:1895,l:{en:"Lumière brothers' first film screening",fr:"Première projection des frères Lumière",ar:"أول عرضٍ سينمائي للأخوين لوميير"}},
+   {y:1937,l:{en:"First feature-length animated film",fr:"Premier long métrage d'animation",ar:"أول فيلم رسوم متحرّكة طويل"}}]},
+ {theme:{en:"Turning Points of the Modern World",fr:"Tournants du Monde Moderne",ar:"منعطفات العالم الحديث"},ev:[
+   {y:1833,l:{en:"Britain abolishes slavery in its empire",fr:"La Grande-Bretagne abolit l'esclavage dans son empire",ar:"بريطانيا تُلغي الرقّ في إمبراطوريتها"}},
+   {y:1865,l:{en:"American Civil War ends",fr:"Fin de la guerre de Sécession",ar:"نهاية الحرب الأهلية الأمريكية"}},
+   {y:1893,l:{en:"New Zealand: first nation to grant women the vote",fr:"Nouvelle-Zélande : premier pays à accorder le vote aux femmes",ar:"نيوزيلندا: أول دولة تمنح المرأة حقّ التصويت"}},
+   {y:1948,l:{en:"Universal Declaration of Human Rights",fr:"Déclaration universelle des droits de l'homme",ar:"الإعلان العالمي لحقوق الإنسان"}},
+   {y:1990,l:{en:"Nelson Mandela is released from prison",fr:"Libération de Nelson Mandela",ar:"الإفراج عن نيلسون مانديلا"}}]}
+];
+var ROUNDS=5,app=document.getElementById('app'),st=null;
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x;}return a;}
+function yr(y){return y<0?Math.abs(y)+' '+tr(G.bc):y;}
+function home(){st=null;
+  app.innerHTML='<div class="view"><div class="eyebrow">'+tr(G.sorter)+'</div><div class="gtitle">'+t("g_timeline")+'</div>'+
+   '<div class="rule"><span class="ln"></span><span class="dot">✦</span><span class="ln"></span></div>'+
+   '<p class="tagline">'+tr(G.intro)+'</p><div class="center"><button class="btn" id="go">'+tr(G.begin)+'</button></div>'+
+   '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelector('#go').onclick=startGame;}
+function startGame(){var order=shuffle(SETS.map(function(_,i){return i;})).slice(0,ROUNDS);
+  st={order:order,round:0,score:0,locked:false,items:null};loadRound();}
+function loadRound(){var set=SETS[st.order[st.round]];var items=shuffle(set.ev);
+  if(JSON.stringify(items)===JSON.stringify(set.ev.slice().sort(function(a,b){return a.y-b.y;})))items=shuffle(items);
+  st.items=items.slice();st.set=set;st.locked=false;render();}
+function render(){var maxScore=ROUNDS*5;
+  var rows=st.items.map(function(ev,i){
+    return '<div class="ev" data-i="'+i+'"><div class="arrows"><button data-up="'+i+'" '+(i===0?'disabled':'')+'>▲</button>'+
+      '<button data-down="'+i+'" '+(i===st.items.length-1?'disabled':'')+'>▼</button></div>'+
+      '<div class="lbl">'+tr(ev.l)+'</div></div>';}).join('');
+  app.innerHTML='<div class="view"><div class="phead"><span>'+tr(G.round)+' <b>'+(st.round+1)+' / '+ROUNDS+'</b></span><span class="b">'+t("score")+' <b>'+st.score+'</b></span></div>'+
+   '<div class="theme">'+tr(st.set.theme)+'</div><div class="hint">'+tr(G.hint)+'</div>'+
+   '<div class="list" id="list">'+rows+'</div>'+
+   '<div class="actions"><button class="btn" id="lock">'+tr(G.lockIn)+'</button></div>'+
+   '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelectorAll('[data-up]').forEach(function(b){b.onclick=function(){move(+b.dataset.up,-1);};});
+  app.querySelectorAll('[data-down]').forEach(function(b){b.onclick=function(){move(+b.dataset.down,1);};});
+  app.querySelector('#lock').onclick=lock;}
+function move(i,d){var j=i+d;if(j<0||j>=st.items.length)return;var x=st.items[i];st.items[i]=st.items[j];st.items[j]=x;render();}
+function lock(){if(st.locked)return;st.locked=true;
+  var correctOrder=st.set.ev.slice().sort(function(a,b){return a.y-b.y;});
+  var gained=0;
+  var rows=app.querySelectorAll('#list .ev');
+  st.items.forEach(function(ev,i){var right=(ev===correctOrder[i]);if(right)gained++;
+    var row=rows[i];row.classList.add(right?'ok':'no');
+    row.querySelector('.arrows').innerHTML='';
+    row.insertAdjacentHTML('beforeend','<div class="yr">'+yr(ev.y)+'</div>');});
+  st.score+=gained;
+  var last=st.round===ROUNDS-1;
+  var act=app.querySelector('.actions');
+  act.innerHTML='<span style="align-self:center;font-family:Cinzel;font-size:.72rem;letter-spacing:.1em;color:var(--verdigris)">'+gained+'/5 '+tr(G.placed)+'</span>'+
+    '<button class="btn" id="nx">'+(last?tr(G.finish):tr(G.nextRound))+'</button>';
+  app.querySelector('#nx').onclick=function(){if(last)results();else{st.round++;loadRound();}};}
+function results(){var maxScore=ROUNDS*5,pct=st.score/maxScore,r=G.ranks.find(function(x){return pct>=x.min;});
+  var isBest=Curiosa.saveScore('timeline',st.score);
+  app.innerHTML='<div class="view"><div class="res-title">'+tr(G.complete)+'</div>'+
+   (isBest?'<div class="newbest">'+t("newBest")+'</div>':'')+
+   '<div class="rank">'+tr(r.t)+'</div><div class="scorebig">'+st.score+'<small> / '+maxScore+'</small></div>'+
+   '<p class="res-sub">'+tr(r.d)+'</p>'+
+   '<div class="res-actions"><button class="btn" id="again">'+t("playAgain")+'</button><button class="btn ghost" id="menu">'+t("mainGate")+'</button></div>'+
+   '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelector('#again').onclick=startGame;app.querySelector('#menu').onclick=home;}
+home();
+</script>
+</body>
+</html>

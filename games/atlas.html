@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Showdown — Curiosa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/shared.css">
+<style>
+  .stage{max-width:560px}
+  .phead{display:flex;justify-content:space-between;align-items:center;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.12em;margin-bottom:18px}
+  .phead b{color:var(--oxblood)}.phead .b b{color:var(--verdigris)}
+  .duel{display:grid;gap:14px}
+  .known{background:rgba(53,107,94,.12);border:1px solid var(--verdigris);border-radius:4px;padding:18px;text-align:center}
+  .chall{background:rgba(255,250,238,.55);border:1px solid var(--line);border-radius:4px;padding:18px;text-align:center}
+  .cname{font-family:'Cinzel',serif;font-size:1.4rem;letter-spacing:.02em;line-height:1.2}
+  html[lang="ar"] .cname{font-family:'Amiri',serif;letter-spacing:0;font-size:1.6rem}
+  .clabel{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  html[lang="ar"] .clabel{font-family:'Amiri',serif;letter-spacing:0;font-size:.8rem}
+  .area{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--verdigris);margin-top:6px}
+  .area small{font-size:.7rem;color:var(--ink-soft)}
+  .q{text-align:center;font-style:italic;color:var(--ink-soft);margin:6px 0 2px;font-size:1.05rem}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  .choice{cursor:pointer;font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.06em;padding:16px;border:1px solid var(--line);border-radius:3px;background:rgba(255,250,238,.6);color:var(--ink);transition:transform .14s,background .14s,border-color .14s;display:flex;align-items:center;justify-content:center;gap:8px}
+  html[lang="ar"] .choice{font-family:'Amiri',serif;letter-spacing:0;font-size:1.05rem}
+  .choice:hover{transform:translateY(-2px);background:rgba(255,250,238,.95);border-color:var(--gold)}
+  .choice .ar{font-size:1.3rem;color:var(--oxblood)}
+  .reveal{text-align:center;margin-top:8px}
+  .verdict{font-family:'Cinzel',serif;letter-spacing:.14em;text-transform:uppercase;font-size:.82rem;margin-bottom:8px}
+  .verdict.good{color:var(--verdigris)}.verdict.bad{color:var(--oxblood)}
+  .res-title{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-soft);text-align:center;margin-bottom:8px}
+  .rank{font-family:'Cinzel',serif;font-weight:700;text-align:center;font-size:clamp(1.6rem,5vw,2.3rem);color:var(--oxblood)}
+  html[lang="ar"] .rank,html[lang="ar"] .res-title{font-family:'Amiri',serif;letter-spacing:0}
+  .scorebig{text-align:center;margin:18px 0 4px;font-size:3rem;font-family:'Cinzel',serif}.scorebig small{font-size:1.1rem;color:var(--ink-soft)}
+  .res-sub{text-align:center;font-style:italic;color:var(--ink-soft);font-size:1.02rem;max-width:400px;margin:6px auto 22px;line-height:1.5}
+  .res-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .newbest{text-align:center;color:var(--verdigris);font-family:'Cinzel',serif;letter-spacing:.1em;font-size:.78rem;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+<div class="gamewrap"><div class="stage">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <div id="app"></div>
+</div></div>
+<script src="../assets/strings.js"></script>
+<script>window.CURIOSA_ROOT="../";</script>
+<script src="../assets/core.js"></script>
+<script>
+var t=Curiosa.t,L=Curiosa.lang;function tr(o){return o[L()]||o.en;}
+var G={
+  duel:{en:"A Duel of Nations",fr:"Un Duel de Nations",ar:"مبارزة بين الأمم"},
+  intro:{en:"One country's area is shown. Is the challenger larger or smaller? Keep your chain alive.",fr:"La superficie d'un pays est donnée. Le challenger est-il plus grand ou plus petit ? Gardez votre série en vie.",ar:"تُعرَض مساحة دولةٍ ما. هل المنافِس أكبر أم أصغر؟ حافِظ على سلسلتك."},
+  begin:{en:"Begin the Duel",fr:"Commencer le duel",ar:"ابدأ المبارزة"},
+  chain:{en:"Chain",fr:"Série",ar:"السلسلة"},
+  best:{en:"Best",fr:"Record",ar:"الأفضل"},
+  knownLabel:{en:"Known territory",fr:"Territoire connu",ar:"أرضٌ معلومة"},
+  challLabel:{en:"The challenger",fr:"Le challenger",ar:"المنافِس"},
+  question:{en:"Is it larger or smaller in area?",fr:"Est-il plus grand ou plus petit en superficie ?",ar:"هل مساحته أكبر أم أصغر؟"},
+  larger:{en:"Larger",fr:"Plus grand",ar:"أكبر"},
+  smaller:{en:"Smaller",fr:"Plus petit",ar:"أصغر"},
+  sqkm:{en:"km²",fr:"km²",ar:"كم²"},
+  correct:{en:"✦ Correct",fr:"✦ Correct",ar:"✦ صحيح"},
+  over:{en:"✕ The chain breaks",fr:"✕ La série est rompue",ar:"✕ انقطعت السلسلة"},
+  gameOver:{en:"Duel Over",fr:"Duel terminé",ar:"انتهت المبارزة"},
+  ranks:[
+    {min:15,t:{en:"Grand Cartographer",fr:"Grand Cartographe",ar:"خبير الأطلس"},d:{en:"You carry the atlas in your head.",fr:"Vous portez l'atlas dans votre tête.",ar:"تحمل الأطلس في ذاكرتك."}},
+    {min:10,t:{en:"Master Navigator",fr:"Maître Navigateur",ar:"ملّاح بارع"},d:{en:"A formidable sense of scale.",fr:"Un remarquable sens des proportions.",ar:"حسٌّ بارعٌ للمساحات."}},
+    {min:6,t:{en:"Seasoned Explorer",fr:"Explorateur Aguerri",ar:"مستكشِف متمرّس"},d:{en:"The map is taking shape.",fr:"La carte se dessine.",ar:"بدأت الخريطة تتّضح."}},
+    {min:3,t:{en:"Wandering Apprentice",fr:"Apprenti Voyageur",ar:"متدرّب جوّال"},d:{en:"A few more journeys to go.",fr:"Encore quelques voyages.",ar:"بقيت بضع رحلات."}},
+    {min:0,t:{en:"Fresh Recruit",fr:"Nouvelle Recrue",ar:"مستجِدّ"},d:{en:"Every cartographer starts somewhere.",fr:"Tout cartographe débute quelque part.",ar:"كلّ رسّام خرائط يبدأ من مكان."}}
+  ]
+};
+var C=[
+ {a:17098242,n:{en:"Russia",fr:"Russie",ar:"روسيا"}},
+ {a:9984670,n:{en:"Canada",fr:"Canada",ar:"كندا"}},
+ {a:9833517,n:{en:"United States",fr:"États-Unis",ar:"الولايات المتحدة"}},
+ {a:9596961,n:{en:"China",fr:"Chine",ar:"الصين"}},
+ {a:8515767,n:{en:"Brazil",fr:"Brésil",ar:"البرازيل"}},
+ {a:7692024,n:{en:"Australia",fr:"Australie",ar:"أستراليا"}},
+ {a:3287263,n:{en:"India",fr:"Inde",ar:"الهند"}},
+ {a:2780400,n:{en:"Argentina",fr:"Argentine",ar:"الأرجنتين"}},
+ {a:2724900,n:{en:"Kazakhstan",fr:"Kazakhstan",ar:"كازاخستان"}},
+ {a:2381741,n:{en:"Algeria",fr:"Algérie",ar:"الجزائر"}},
+ {a:2344858,n:{en:"DR Congo",fr:"RD Congo",ar:"الكونغو الديمقراطية"}},
+ {a:2149690,n:{en:"Saudi Arabia",fr:"Arabie saoudite",ar:"السعودية"}},
+ {a:1964375,n:{en:"Mexico",fr:"Mexique",ar:"المكسيك"}},
+ {a:1904569,n:{en:"Indonesia",fr:"Indonésie",ar:"إندونيسيا"}},
+ {a:1861484,n:{en:"Sudan",fr:"Soudan",ar:"السودان"}},
+ {a:1759540,n:{en:"Libya",fr:"Libye",ar:"ليبيا"}},
+ {a:1648195,n:{en:"Iran",fr:"Iran",ar:"إيران"}},
+ {a:1564110,n:{en:"Mongolia",fr:"Mongolie",ar:"منغوليا"}},
+ {a:1285216,n:{en:"Peru",fr:"Pérou",ar:"بيرو"}},
+ {a:1284000,n:{en:"Chad",fr:"Tchad",ar:"تشاد"}},
+ {a:1221037,n:{en:"South Africa",fr:"Afrique du Sud",ar:"جنوب أفريقيا"}},
+ {a:1141748,n:{en:"Colombia",fr:"Colombie",ar:"كولومبيا"}},
+ {a:1002450,n:{en:"Egypt",fr:"Égypte",ar:"مصر"}},
+ {a:551695,n:{en:"France",fr:"France",ar:"فرنسا"}},
+ {a:505990,n:{en:"Spain",fr:"Espagne",ar:"إسبانيا"}},
+ {a:450295,n:{en:"Sweden",fr:"Suède",ar:"السويد"}},
+ {a:377975,n:{en:"Japan",fr:"Japon",ar:"اليابان"}},
+ {a:357114,n:{en:"Germany",fr:"Allemagne",ar:"ألمانيا"}},
+ {a:301340,n:{en:"Italy",fr:"Italie",ar:"إيطاليا"}},
+ {a:243610,n:{en:"United Kingdom",fr:"Royaume-Uni",ar:"المملكة المتحدة"}},
+ {a:103000,n:{en:"Iceland",fr:"Islande",ar:"آيسلندا"}},
+ {a:92212,n:{en:"Portugal",fr:"Portugal",ar:"البرتغال"}},
+ {a:30528,n:{en:"Belgium",fr:"Belgique",ar:"بلجيكا"}},
+ {a:10991,n:{en:"Jamaica",fr:"Jamaïque",ar:"جامايكا"}},
+ {a:728,n:{en:"Singapore",fr:"Singapour",ar:"سنغافورة"}},
+ {a:1246700,n:{en:"Angola",fr:"Angola",ar:"أنغولا"}},
+ {a:1104300,n:{en:"Ethiopia",fr:"Éthiopie",ar:"إثيوبيا"}},
+ {a:923768,n:{en:"Nigeria",fr:"Nigéria",ar:"نيجيريا"}},
+ {a:916445,n:{en:"Venezuela",fr:"Venezuela",ar:"فنزويلا"}},
+ {a:881913,n:{en:"Pakistan",fr:"Pakistan",ar:"باكستان"}},
+ {a:825615,n:{en:"Namibia",fr:"Namibie",ar:"ناميبيا"}},
+ {a:783562,n:{en:"Turkey",fr:"Turquie",ar:"تركيا"}},
+ {a:756102,n:{en:"Chile",fr:"Chili",ar:"تشيلي"}},
+ {a:676578,n:{en:"Myanmar",fr:"Birmanie",ar:"ميانمار"}},
+ {a:652230,n:{en:"Afghanistan",fr:"Afghanistan",ar:"أفغانستان"}},
+ {a:603500,n:{en:"Ukraine",fr:"Ukraine",ar:"أوكرانيا"}},
+ {a:587041,n:{en:"Madagascar",fr:"Madagascar",ar:"مدغشقر"}},
+ {a:580367,n:{en:"Kenya",fr:"Kenya",ar:"كينيا"}},
+ {a:513120,n:{en:"Thailand",fr:"Thaïlande",ar:"تايلاند"}},
+ {a:446550,n:{en:"Morocco",fr:"Maroc",ar:"المغرب"}},
+ {a:385207,n:{en:"Norway",fr:"Norvège",ar:"النرويج"}},
+ {a:338424,n:{en:"Finland",fr:"Finlande",ar:"فنلندا"}},
+ {a:331212,n:{en:"Vietnam",fr:"Viêt Nam",ar:"فيتنام"}},
+ {a:270467,n:{en:"New Zealand",fr:"Nouvelle-Zélande",ar:"نيوزيلندا"}},
+ {a:163610,n:{en:"Tunisia",fr:"Tunisie",ar:"تونس"}},
+ {a:147181,n:{en:"Nepal",fr:"Népal",ar:"نيبال"}},
+ {a:131957,n:{en:"Greece",fr:"Grèce",ar:"اليونان"}},
+ {a:70273,n:{en:"Ireland",fr:"Irlande",ar:"أيرلندا"}},
+ {a:43094,n:{en:"Denmark",fr:"Danemark",ar:"الدنمارك"}},
+ {a:41285,n:{en:"Switzerland",fr:"Suisse",ar:"سويسرا"}},
+ {a:17818,n:{en:"Kuwait",fr:"Koweït",ar:"الكويت"}},
+ {a:11586,n:{en:"Qatar",fr:"Qatar",ar:"قطر"}},
+ {a:9251,n:{en:"Cyprus",fr:"Chypre",ar:"قبرص"}},
+ {a:2586,n:{en:"Luxembourg",fr:"Luxembourg",ar:"لوكسمبورغ"}}
+];
+var app=document.getElementById('app'),st=null;
+function fmt(n){return n.toLocaleString(L()==='ar'?'ar-EG':(L()==='fr'?'fr-FR':'en-US'));}
+function pick(ex){var i;do{i=Math.floor(Math.random()*C.length);}while(ex&&C[i]===ex);return C[i];}
+function home(){st=null;var best=(Curiosa.getScores().atlas||{}).best||0;
+  app.innerHTML='<div class="view"><div class="eyebrow">'+tr(G.duel)+'</div><div class="gtitle">'+t("g_atlas")+'</div>'+
+   '<div class="rule"><span class="ln"></span><span class="dot">✦</span><span class="ln"></span></div>'+
+   '<p class="tagline">'+tr(G.intro)+'</p>'+
+   '<div class="center"><button class="btn" id="go">'+tr(G.begin)+'</button></div>'+
+   (best?'<p class="center" style="margin-top:16px;font-family:Cinzel;font-size:.72rem;letter-spacing:.1em;color:var(--ink-soft)">'+tr(G.best)+': '+best+'</p>':'')+
+   '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelector('#go').onclick=startGame;}
+function startGame(){st={score:0,known:pick(),chall:null};st.chall=pick(st.known);round();}
+function round(){var best=(Curiosa.getScores().atlas||{}).best||0;
+  app.innerHTML='<div class="view"><div class="phead"><span>'+tr(G.chain)+' <b>'+st.score+'</b></span><span class="b">'+tr(G.best)+' <b>'+Math.max(best,st.score)+'</b></span></div>'+
+   '<div class="duel"><div class="known"><div class="clabel">'+tr(G.knownLabel)+'</div><div class="cname">'+tr(st.known.n)+'</div>'+
+     '<div class="area">'+fmt(st.known.a)+' <small>'+tr(G.sqkm)+'</small></div></div>'+
+   '<div class="chall"><div class="clabel">'+tr(G.challLabel)+'</div><div class="cname">'+tr(st.chall.n)+'</div>'+
+     '<div class="q">'+tr(G.question)+'</div>'+
+     '<div class="choices"><button class="choice" data-g="larger"><span class="ar">▲</span>'+tr(G.larger)+'</button>'+
+       '<button class="choice" data-g="smaller"><span class="ar">▼</span>'+tr(G.smaller)+'</button></div></div></div>'+
+   '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelectorAll('.choice').forEach(function(b){b.onclick=function(){guess(b.dataset.g);};});}
+function guess(g){
+  var bigger=st.chall.a>st.known.a;var correct=(g==='larger'&&bigger)||(g==='smaller'&&!bigger);
+  app.querySelectorAll('.choice').forEach(function(b){b.disabled=true;b.style.opacity=.5;});
+  var chall=app.querySelector('.chall');
+  chall.insertAdjacentHTML('beforeend','<div class="area" style="margin-top:10px">'+fmt(st.chall.a)+' <small>'+tr(G.sqkm)+'</small></div>'+
+    '<div class="reveal"><div class="verdict '+(correct?'good':'bad')+'">'+(correct?tr(G.correct):tr(G.over))+'</div></div>');
+  if(correct){st.score++;st.known=st.chall;st.chall=pick(st.known);
+    setTimeout(round,850);}
+  else setTimeout(results,1100);}
+function results(){var r=G.ranks.find(function(x){return st.score>=x.min;});
+  var isBest=Curiosa.saveScore('atlas',st.score);
+  app.innerHTML='<div class="view"><div class="res-title">'+tr(G.gameOver)+'</div>'+
+   (isBest?'<div class="newbest">'+t("newBest")+'</div>':'')+
+   '<div class="rank">'+tr(r.t)+'</div><div class="scorebig">'+st.score+'<small> '+t("unit_chain")+'</small></div>'+
+   '<p class="res-sub">'+tr(r.d)+'</p>'+
+   '<div class="res-actions"><button class="btn" id="again">'+t("playAgain")+'</button><button class="btn ghost" id="menu">'+t("mainGate")+'</button></div>'+
+   '<a class="backlink" href="../index.html">← '+t("back")+'</a></div>';
+  app.querySelector('#again').onclick=startGame;app.querySelector('#menu').onclick=home;}
+home();
+</script>
+</body>
+</html>
